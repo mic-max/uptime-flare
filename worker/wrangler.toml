@@ -3,6 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2025-04-02"
 compatibility_flags = [ "nodejs_compat" ]
 
+[placement]
+mode = "smart"
+
 [[d1_databases]]
 binding = "UPTIMEFLARE_D1"
 database_name = "uptimeflare_d1"
