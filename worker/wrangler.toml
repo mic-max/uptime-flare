@@ -7,3 +7,18 @@ compatibility_flags = [ "nodejs_compat" ]
 binding = "UPTIMEFLARE_D1"
 database_name = "uptimeflare_d1"
 database_id = "00000000-0000-0000-0000-000000000000"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1
