@@ -61,18 +61,28 @@ const workerConfig: WorkerConfig = {
         'User-Agent': 'Uptimeflare',
       },
     },
-    // Example TCP Monitor
-    // {
-    //   id: 'test_tcp_monitor',
-    //   name: 'Example TCP Monitor',
-    //   // `method` should be `TCP_PING` for tcp monitors
-    //   method: 'TCP_PING',
-    //   // `target` should be `host:port` for tcp monitors
-    //   target: '1.2.3.4:22',
-    //   tooltip: 'My production server SSH',
-    //   statusPageLink: 'https://example.com',
-    //   timeout: 5000,
-    // },
+    {
+      id: 'minecraft_server',
+      name: 'Minecraft Server',
+      method: 'TCP_PING',
+      target: 'minecraft.micmax.pw:25565',
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Uptimeflare',
+      },
+    },
+    {
+      id: 'jellyfin_server',
+      name: 'Jellyfin',
+      method: 'GET',
+      target: 'https://jellyfin.micmax.pw',
+      statusPageLink: 'https://jellyfin.micmax.pw',
+      expectedCodes: [200],
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Uptimeflare',
+      },
+    },
   ],
   // [Optional] Notification settings
 //   notification: {
