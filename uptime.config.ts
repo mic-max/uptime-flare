@@ -1,27 +1,23 @@
-// This is a simplified example config file for quickstart
-// Some not frequently used features are omitted/commented out here
-// For a full-featured example, please refer to `uptime.config.full.ts`
-
-// Don't edit this line
 import { MaintenanceConfig, PageConfig, WorkerConfig } from './types/config'
 
 const pageConfig: PageConfig = {
-  // Title for your status page
-  title: "MicMax's Status Page",
-  // Links shown at the header of your status page, could set `highlight` to `true`
+  title: "MicMax's Status",
   links: [
     { link: 'https://github.com/mic-max', label: 'GitHub' },
-    { link: 'https://micmax.pw', label: 'Blog' },
     { link: 'mailto:yo@micmax.pw', label: 'Email Me', highlight: true },
   ],
+  // [OPTIONAL] Set the path to your favicon, default to '/favicon.png' if not specified
+  // favicon: 'https://example.com/favicon.ico',
+  // [OPTIONAL] Set the path to your logo, default to '/logo.svg' if not specified
+  // logo: 'https://example.com/logo.svg',
+  customFooter: '',
 }
 
 const workerConfig: WorkerConfig = {
-  // Define all your monitors here
   monitors: [
     {
       id: 'micmax_pw_blog',
-      name: 'MicMax Blog Monitor',
+      name: 'MicMax Blog',
       method: 'GET',
       target: 'https://micmax.pw',
       statusPageLink: 'https://micmax.pw',
@@ -33,11 +29,33 @@ const workerConfig: WorkerConfig = {
     },
     {
       id: 'maxwellmade_site',
-      name: 'Maxwell Made Monitor',
+      name: 'Maxwell Made',
       method: 'GET',
       target: 'https://maxwellmade.ca',
       statusPageLink: 'https://maxwellmade.ca',
       expectedCodes: [200],
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Uptimeflare',
+      },
+    },
+    {
+      id: 'cluster_test_site',
+      name: 'Cluster Site',
+      method: 'GET',
+      target: 'https://site.micmax.pw',
+      statusPageLink: 'https://site.micmax.pw',
+      expectedCodes: [200],
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Uptimeflare',
+      },
+    },
+    {
+      id: 'mumble_server',
+      name: 'Mumble Server',
+      method: 'TCP_PING',
+      target: 'mumble.micmax.pw:64738',
       timeout: 10000,
       headers: {
         'User-Agent': 'Uptimeflare',
