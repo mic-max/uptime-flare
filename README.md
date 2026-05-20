@@ -88,3 +88,10 @@ To contribute new features or customize your deployment furthermore, see [here](
 - [x] New header logo
 - [x] Improve CPU time usage
 - [x] Local deployment (docs WIP)
+
+## MicMax Setup
+
+### Adding Pushover
+`cd worker`
+`npx wrangler secret put PUSHOVER_TOKEN --name uptimeflare_worker`
+`npx wrangler secret put PUSHOVER_USER_KEY --name uptimeflare_worker`
