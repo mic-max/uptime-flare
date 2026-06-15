@@ -1,6 +1,7 @@
 import { maintenances, workerConfig } from '@/uptime.config'
 import { NextRequest } from 'next/server'
-import { CompactedMonitorStateWrapper, getFromStore } from '@/worker/src/store'
+import type { Env } from '@/worker/src'
+import { getLastIncident, getLastLatency, getLastUpdate } from '@/worker/src/store'
 
 export const runtime = 'edge'
 
@@ -12,11 +13,10 @@ const headers = {
 }
 
 export default async function handler(req: NextRequest): Promise<Response> {
-  const compactedState = new CompactedMonitorStateWrapper(
-    await getFromStore(process.env as any, 'state')
-  )
+  const db = (process.env as any as Env).UPTIMEFLARE_D1
 
-  if (compactedState.data.lastUpdate === 0) {
+  const lastUpdate = await getLastUpdate(db)
+  if (lastUpdate === 0) {
     return new Response(JSON.stringify({ error: 'No data available' }), {
       status: 500,
       headers,
@@ -24,27 +24,30 @@ export default async function handler(req: NextRequest): Promise<Response> {
   }
 
   let monitors: any = {}
+  let overallUp = 0
+  let overallDown = 0
 
   for (let monitor of workerConfig.monitors) {
-    const lastIncident = compactedState.getIncident(
-      monitor.id,
-      compactedState.incidentLen(monitor.id) - 1
-    )
+    const last = await getLastIncident(db, monitor.id)
+    const latency = await getLastLatency(db, monitor.id)
 
-    const isUp = lastIncident?.end !== null
-    const latency = compactedState.getLastLatency(monitor.id)
+    const isUp = last !== null && last.incident.end !== null
+    if (last !== null) {
+      isUp ? overallUp++ : overallDown++
+    }
+
     monitors[monitor.id] = {
       up: isUp,
-      latency: latency.ping,
-      location: latency.loc,
-      message: isUp ? 'OK' : lastIncident?.error[lastIncident.error.length - 1],
+      latency: latency?.ping ?? 0,
+      location: latency?.loc ?? '',
+      message: isUp ? 'OK' : last?.incident.error[last.incident.error.length - 1] ?? 'No data',
     }
   }
 
   let ret = {
-    up: compactedState.data.overallUp,
-    down: compactedState.data.overallDown,
-    updatedAt: compactedState.data.lastUpdate,
+    up: overallUp,
+    down: overallDown,
+    updatedAt: lastUpdate,
     monitors,
     maintenances,
   }

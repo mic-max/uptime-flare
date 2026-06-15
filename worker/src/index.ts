@@ -3,7 +3,19 @@ import { MonitorTarget } from '../../types/config'
 import { workerConfig } from '../../uptime.config'
 import { doMonitor, getStatus } from './monitor'
 import { formatAndNotify, getWorkerLocation } from './util'
-import { CompactedMonitorStateWrapper, getFromStore, setToStore } from './store'
+import {
+  INCIDENT_RETENTION_SECONDS,
+  LATENCY_RETENTION_SECONDS,
+  deleteOldClosedIncidents,
+  deleteOldLatency,
+  ensureSchema,
+  getFirstIncident,
+  getLastIncident,
+  insertIncident,
+  insertLatency,
+  migrateLegacyBlobIfNeeded,
+  updateIncident,
+} from './store'
 import pLimit from 'p-limit'
 
 export interface Env {
@@ -16,12 +28,13 @@ const Worker = {
     const workerLocation = (await getWorkerLocation()) || 'ERROR'
     console.log(`Running scheduled event on ${workerLocation}...`)
 
-    // Create a wrapped MonitorState from stored compacted state
-    const state = new CompactedMonitorStateWrapper(await getFromStore(env, 'state'))
-    state.data.overallDown = 0
-    state.data.overallUp = 0
+    const db = env.UPTIMEFLARE_D1
 
-    let statusChanged = false
+    // Make sure the relational tables exist (self-healing for existing deployments)
+    // and import the legacy compacted blob on first run after upgrading.
+    await ensureSchema(db)
+    await migrateLegacyBlobIfNeeded(db)
+
     const currentTimeSecond = Math.round(Date.now() / 1000)
 
     // Parallel check multiple monitors
@@ -44,21 +57,15 @@ const Worker = {
       let monitorStatusChanged = false
       const { location: checkLocation, status } = checkResult[monitor.id]
 
-      // Update counters
-      status.up ? state.data.overallUp++ : state.data.overallDown++
-
       // Update incidents
-      // Create a dummy incident to store the start time of the monitoring and simplify logic
-      if (state.incidentLen(monitor.id) === 0) {
-        state.appendIncident(monitor.id, {
-          start: [currentTimeSecond],
-          end: currentTimeSecond,
-          error: ['dummy'],
-        })
+      // Create a dummy incident to store the start time of the monitoring and simplify logic,
+      // so that `lastIncident` below is never null.
+      let last = await getLastIncident(db, monitor.id)
+      if (last === null) {
+        const dummy = { start: [currentTimeSecond], end: currentTimeSecond, error: ['dummy'] }
+        last = { id: await insertIncident(db, monitor.id, dummy), incident: dummy }
       }
-
-      // Then lastIncident here must not be null
-      let lastIncident = state.getIncident(monitor.id, state.incidentLen(monitor.id) - 1)
+      let lastIncident = last.incident
 
       if (status.up) {
         // Current status is up
@@ -66,7 +73,7 @@ const Worker = {
         if (lastIncident.end === null) {
           lastIncident.end = currentTimeSecond
           // write back the modified last incident
-          state.setIncident(monitor.id, state.incidentLen(monitor.id) - 1, lastIncident)
+          await updateIncident(db, last.id, lastIncident)
 
           monitorStatusChanged = true
           try {
@@ -102,23 +109,21 @@ const Worker = {
         // Current status is down
         // open new incident if not already open
         if (lastIncident.end !== null) {
-          state.appendIncident(monitor.id, {
-            start: [currentTimeSecond],
-            end: null,
-            error: [status.err],
-          })
+          const opened = { start: [currentTimeSecond], end: null, error: [status.err] }
+          last = { id: await insertIncident(db, monitor.id, opened), incident: opened }
+          lastIncident = opened
           monitorStatusChanged = true
         } else if (lastIncident.end === null && lastIncident.error.slice(-1)[0] !== status.err) {
           // append if the error message changes
           lastIncident.start.push(currentTimeSecond)
           lastIncident.error.push(status.err)
 
-          // write back the modified last incident
-          state.setIncident(monitor.id, state.incidentLen(monitor.id) - 1, lastIncident)
+          // write back the modified last incident (start_time / start[0] is unchanged)
+          await updateIncident(db, last.id, lastIncident)
           monitorStatusChanged = true
         }
 
-        const currentIncident = state.getIncident(monitor.id, state.incidentLen(monitor.id) - 1)
+        const currentIncident = lastIncident
         try {
           if (
             // monitor status changed AND...
@@ -194,58 +199,33 @@ const Worker = {
         }
       }
 
-      // append to latency data
-      state.appendLatency(monitor.id, {
+      // append to latency data (one row per check; no cooldown, so no samples are dropped)
+      await insertLatency(db, monitor.id, {
         loc: checkLocation,
         ping: status.ping,
         time: currentTimeSecond,
       })
 
-      // discard old data
-      while (state.getFirstLatency(monitor.id).time < currentTimeSecond - 12 * 60 * 60) {
-        state.unshiftLatency(monitor.id)
-      }
+      // discard old latency data outside the retention window
+      await deleteOldLatency(db, monitor.id, currentTimeSecond - LATENCY_RETENTION_SECONDS)
 
-      // discard old incidents
-      while (
-        state.incidentLen(monitor.id) > 0 &&
-        state.getIncident(monitor.id, 0).end &&
-        state.getIncident(monitor.id, 0).end! < currentTimeSecond - 90 * 24 * 60 * 60
-      ) {
-        state.shiftIncident(monitor.id)
-      }
+      // discard old (closed) incidents outside the retention window
+      await deleteOldClosedIncidents(db, monitor.id, currentTimeSecond - INCIDENT_RETENTION_SECONDS)
 
+      // re-anchor the dummy incident so the 90-day bar always spans the full window
+      const incidentCutoff = currentTimeSecond - INCIDENT_RETENTION_SECONDS
+      const first = await getFirstIncident(db, monitor.id)
       if (
-        state.incidentLen(monitor.id) === 0 ||
-        (state.getIncident(monitor.id, 0).start[0] > currentTimeSecond - 90 * 24 * 60 * 60 &&
-          state.getIncident(monitor.id, 0).error[0] != 'dummy')
+        first === null ||
+        (first.incident.start[0] > incidentCutoff && first.incident.error[0] != 'dummy')
       ) {
-        // put the dummy incident back
-        state.unshiftIncident(monitor.id, {
-          start: [currentTimeSecond - 90 * 24 * 60 * 60],
-          end: currentTimeSecond - 90 * 24 * 60 * 60,
+        // put the dummy anchor incident back at the start of the window
+        await insertIncident(db, monitor.id, {
+          start: [incidentCutoff],
+          end: incidentCutoff,
           error: ['dummy'],
         })
       }
-
-      statusChanged ||= monitorStatusChanged
-    }
-
-    console.log(
-      `statusChanged: ${statusChanged}, lastUpdate: ${state.data.lastUpdate}, currentTime: ${currentTimeSecond}`
-    )
-    // Update state
-    // Allow for a cooldown period before writing to storage
-    if (
-      statusChanged ||
-      currentTimeSecond - state.data.lastUpdate >=
-        (workerConfig.kvWriteCooldownMinutes ?? 3) * 60 - 10 // Allow for 10 seconds of clock drift
-    ) {
-      console.log('Updating state...')
-      state.data.lastUpdate = currentTimeSecond
-      await setToStore(env, 'state', state.getCompactedStateStr())
-    } else {
-      console.log('Skipping state update due to cooldown period.')
     }
   },
 }

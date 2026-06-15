@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
-import { CompactedMonitorStateWrapper, getFromStore } from '@/worker/src/store'
+import type { Env } from '@/worker/src'
+import { getLastIncident } from '@/worker/src/store'
 
 export const runtime = 'edge'
 
@@ -45,15 +46,17 @@ export default async function handler(req: NextRequest): Promise<Response> {
       })
     }
 
-    const compactedState = new CompactedMonitorStateWrapper(
-      await getFromStore(process.env as any, 'state')
-    )
+    const db = (process.env as any as Env).UPTIMEFLARE_D1
+    const last = await getLastIncident(db, monitorId)
 
-    const lastIncident = compactedState.getIncident(
-      monitorId,
-      compactedState.incidentLen(monitorId) - 1
-    )
-    const isUp = lastIncident?.end !== null
+    if (last === null) {
+      return new Response(JSON.stringify(errorBadge(label, 'no-data')), {
+        headers: jsonHeaders,
+        status: 404,
+      })
+    }
+
+    const isUp = last.incident.end !== null
 
     const badge: BadgePayload = {
       schemaVersion: 1,
