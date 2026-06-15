@@ -65,13 +65,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.fetch_account_id.outputs.account_id }}
 
-      - name: Migrate state from KV (if needed)
-        run: |
-          python3 deploy/migrate_kv.py
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ steps.fetch_account_id.outputs.account_id }}
-          D1_ID: ${{ env.D1_ID }}
+      # Note: the legacy compacted-blob -> relational migration runs automatically
+      # inside the worker's scheduled handler on its first cron tick after deploy
+      # (see worker/src/store.ts:migrateLegacyBlobIfNeeded). No deploy-time step needed.
 
       - name: Deploy using Terraform
         # As we don't save terraform state somewhere, we need to import the existing resources
