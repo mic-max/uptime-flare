@@ -1,3 +1,6 @@
+// Full-featured example config is available at
+// https://github.com/lyc8503/UptimeFlare/blob/main/uptime.config.full.ts
+
 import { MaintenanceConfig, PageConfig, WorkerConfig } from './types/config'
 
 const pageConfig: PageConfig = {
