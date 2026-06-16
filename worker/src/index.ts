@@ -44,13 +44,20 @@ const Worker = {
       checkQueue.push(
         limit(async () => {
           const result = await doMonitor(monitor, workerLocation, env)
+          // A failed check has no meaningful latency: a fast rejection (e.g.
+          // ECONNREFUSED) reports ~0ms, which would otherwise plot as "blazing
+          // fast" on the chart. Record the timeout (max latency) instead so a
+          // down sample always reads as the worst case, like a real timeout would.
+          const ping = result.status.up
+            ? result.status.ping
+            : monitor.timeout ?? 6000
           // Persist the latency sample as soon as the check resolves, so a sample
           // is never lost if a later monitor's processing fails or the scheduled
           // invocation is terminated before the incident-processing loop finishes.
           try {
             await insertLatency(db, result.id, {
               loc: result.location,
-              ping: result.status.ping,
+              ping,
               time: currentTimeSecond,
             })
           } catch (e) {
