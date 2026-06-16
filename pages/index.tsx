@@ -11,7 +11,7 @@ import Footer from '@/components/Footer'
 import type { Env } from '@/worker/src'
 import { loadMonitorState } from '@/worker/src/store'
 
-export const runtime = 'experimental-edge'
+export const runtime = 'edge'
 
 export default function Home({
   state,

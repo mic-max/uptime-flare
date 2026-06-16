@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react'
 import MaintenanceAlert from '@/components/MaintenanceAlert'
 import NoIncidentsAlert from '@/components/NoIncidents'
 
-export const runtime = 'experimental-edge'
+export const runtime = 'edge'
 
 function getSelectedMonth() {
   const hash = window.location.hash.replace('#', '')
