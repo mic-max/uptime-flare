@@ -10,7 +10,9 @@ import MaintenanceAlert from '@/components/MaintenanceAlert'
 import NoIncidentsAlert from '@/components/NoIncidents'
 import type { GetServerSidePropsContext } from 'next'
 
-export const runtime = 'edge'
+// Pages Router page rendering on the edge requires 'experimental-edge' in Next 14;
+// plain 'edge' is only valid for API/route handlers (see pages/api/*).
+export const runtime = 'experimental-edge'
 
 function getSelectedMonth() {
   const hash = window.location.hash.replace('#', '')

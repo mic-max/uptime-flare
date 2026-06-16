@@ -12,7 +12,9 @@ import type { Env } from '@/worker/src'
 import type { GetServerSidePropsContext } from 'next'
 import { loadMonitorState } from '@/worker/src/store'
 
-export const runtime = 'edge'
+// Pages Router page rendering on the edge requires 'experimental-edge' in Next 14;
+// plain 'edge' is only valid for API/route handlers (see pages/api/*).
+export const runtime = 'experimental-edge'
 
 export default function Home({
   state,
