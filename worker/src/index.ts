@@ -7,13 +7,12 @@ import {
   INCIDENT_RETENTION_SECONDS,
   LATENCY_RETENTION_SECONDS,
   deleteOldClosedIncidents,
-  deleteOldLatency,
   ensureSchema,
   getFirstIncident,
   getLastIncident,
   insertIncident,
-  insertLatency,
   updateIncident,
+  writeLatencyBatch,
 } from './store'
 import pLimit from 'p-limit'
 
@@ -49,34 +48,32 @@ const Worker = {
     let checkResult: Record<string, CheckResult> = {};
     const limit = pLimit(5);
     for (const monitor of workerConfig.monitors) {
-      checkQueue.push(
-        limit(async () => {
-          const result = await doMonitor(monitor, workerLocation, env)
-          // A failed check has no meaningful latency: a fast rejection (e.g.
-          // ECONNREFUSED) reports ~0ms, which would otherwise plot as "blazing
-          // fast" on the chart. Record the timeout (max latency) instead so a
-          // down sample always reads as the worst case, like a real timeout would.
-          const ping = result.status.up
-            ? result.status.ping
-            : monitor.timeout ?? DEFAULT_TIMEOUT_MS
-          // Persist the latency sample as soon as the check resolves, so a sample
-          // is never lost if a later monitor's processing fails or the scheduled
-          // invocation is terminated before the incident-processing loop finishes.
-          try {
-            await insertLatency(db, result.id, {
-              loc: result.location,
-              ping,
-              time: currentTimeSecond,
-            })
-          } catch (e) {
-            console.error(`Error inserting latency for ${result.id}: ${e}`)
-          }
-          return result
-        })
-      )
+      checkQueue.push(limit(() => doMonitor(monitor, workerLocation, env)))
     }
     for (const result of await Promise.all(checkQueue)) {
       checkResult[result.id] = result
+    }
+
+    // Persist this tick's latency samples (and prune old ones) in one batched
+    // round-trip, before the sequential incident loop so the samples survive even
+    // if that loop is interrupted. A failed check has no meaningful latency — a
+    // fast rejection (e.g. ECONNREFUSED) reports ~0ms, which would plot as "blazing
+    // fast" — so a down sample is clamped to the timeout (max), like a real timeout.
+    try {
+      const samples = workerConfig.monitors.map((monitor) => {
+        const { location, status } = checkResult[monitor.id]
+        return {
+          monitorId: monitor.id,
+          record: {
+            loc: location,
+            ping: status.up ? status.ping : monitor.timeout ?? DEFAULT_TIMEOUT_MS,
+            time: currentTimeSecond,
+          },
+        }
+      })
+      await writeLatencyBatch(db, samples, currentTimeSecond - LATENCY_RETENTION_SECONDS)
+    } catch (e) {
+      console.error(`Error writing latency batch: ${e}`)
     }
 
     // Update each monitor's state based on check results
@@ -231,10 +228,8 @@ const Worker = {
       // (latency sample for this tick was already persisted in the parallel check phase above)
     }
 
-    // ---- Retention & maintenance: once per tick / hourly, not per monitor ----
-
-    // Latency grows every tick, so trim it (across all monitors) each run.
-    await deleteOldLatency(db, currentTimeSecond - LATENCY_RETENTION_SECONDS)
+    // ---- Incident retention & dummy re-anchor: at most hourly, not per monitor ----
+    // (latency pruning is handled in the batched write above)
 
     // Old-incident cleanup and the dummy re-anchor only matter as the 90-day
     // window slides, so run them at most hourly. The delete must come before the

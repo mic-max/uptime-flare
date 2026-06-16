@@ -135,20 +135,23 @@ export async function deleteOldClosedIncidents(db: D1Database, cutoff: number): 
     .run()
 }
 
-export async function insertLatency(
+// Persist this tick's latency samples and prune samples older than `pruneBefore`
+// in a single batched round-trip, instead of one INSERT per monitor plus a
+// separate DELETE. Called once per tick.
+export async function writeLatencyBatch(
   db: D1Database,
-  monitorId: string,
-  record: LatencyRecord
+  samples: { monitorId: string; record: LatencyRecord }[],
+  pruneBefore: number
 ): Promise<void> {
-  await db
-    .prepare(`INSERT INTO latency (monitor_id, ts, ping, loc) VALUES (?, ?, ?, ?)`)
-    .bind(monitorId, record.time, record.ping, record.loc)
-    .run()
-}
-
-// Drop latency samples (across all monitors) older than the retention window.
-export async function deleteOldLatency(db: D1Database, cutoff: number): Promise<void> {
-  await db.prepare(`DELETE FROM latency WHERE ts < ?`).bind(cutoff).run()
+  const statements: D1PreparedStatement[] = [
+    ...samples.map(({ monitorId, record }) =>
+      db
+        .prepare(`INSERT INTO latency (monitor_id, ts, ping, loc) VALUES (?, ?, ?, ?)`)
+        .bind(monitorId, record.time, record.ping, record.loc)
+    ),
+    db.prepare(`DELETE FROM latency WHERE ts < ?`).bind(pruneBefore),
+  ]
+  await db.batch(statements)
 }
 
 export async function getLastLatency(
