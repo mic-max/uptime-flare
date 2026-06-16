@@ -84,7 +84,6 @@ export default function IncidentsPage({ monitors }: { monitors: MonitorTarget[] 
     <>
       <Head>
         <title>{pageConfig.title}</title>
-        <link rel="icon" href={pageConfig.favicon ?? '/favicon.png'} />
       </Head>
 
       <main className={inter.className}>

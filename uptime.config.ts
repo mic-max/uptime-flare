@@ -9,10 +9,6 @@ const pageConfig: PageConfig = {
     { link: 'https://github.com/mic-max', label: 'GitHub' },
     { link: 'mailto:yo@micmax.pw', label: 'Email Me', highlight: true },
   ],
-  // [OPTIONAL] Set the path to your favicon, default to '/favicon.png' if not specified
-  // favicon: 'https://example.com/favicon.ico',
-  // [OPTIONAL] Set the path to your logo, default to '/logo.svg' if not specified
-  // logo: 'https://example.com/logo.svg',
   customFooter: '',
 }
 
