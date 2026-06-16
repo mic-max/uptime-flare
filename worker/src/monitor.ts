@@ -370,12 +370,9 @@ export async function doMonitor(monitor: MonitorTarget, defaultLocation: string,
           locationHint: doLoc as DurableObjectLocationHint,
         })
         resp = await doStub.getLocationAndStatus(monitor)
-        try {
-          // Kill the DO instance after use, to avoid extra resource usage
-          await doStub.kill()
-        } catch (err) {
-          // An error here is expected, ignore it
-        }
+        // No explicit teardown: the checker holds no state, so the runtime
+        // hibernates and evicts the idle instance on its own (and reuses it on
+        // the next tick). Force-killing it only added cold-starts and error logs.
       } else if (monitor.checkProxy.startsWith('globalping://')) {
         resp = await getStatusWithGlobalPing(monitor)
       } else {

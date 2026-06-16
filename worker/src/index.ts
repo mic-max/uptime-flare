@@ -36,6 +36,7 @@ const Worker = {
 
     // Parallel check multiple monitors
     // Max concurrent connection is 6 limited by Cloudflare Workers, we use 5 here to be safe
+    // https://developers.cloudflare.com/workers/platform/limits/#simultaneous-open-connections
     type CheckResult = { id: string; location: string; status: { ping: number; up: boolean; err: string } }
     let checkQueue: Promise<CheckResult>[] = []
     let checkResult: Record<string, CheckResult> = {};
@@ -264,13 +265,5 @@ export class RemoteChecker extends DurableObject {
       location: colo,
       status: status,
     }
-  }
-
-  async kill() {
-    // Throwing an error in `blockConcurrencyWhile` will terminate the Durable Object instance
-    // https://developers.cloudflare.com/durable-objects/api/state/#blockconcurrencywhile
-    this.ctx.blockConcurrencyWhile(async () => {
-      throw 'killed'
-    })
   }
 }
