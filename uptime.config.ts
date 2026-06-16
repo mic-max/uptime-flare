@@ -75,7 +75,6 @@ const workerConfig: WorkerConfig = {
       method: 'TCP_PING',
       target: 'minecraft.micmax.pw:25565',
       checkProxy: 'worker://enam',
-    //   statusPageLink: 'minecraft.micmax.pw',
       hideLatencyChart: false,
       timeout: 5000,
       headers: {
