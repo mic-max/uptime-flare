@@ -62,7 +62,7 @@ const Worker = {
               time: currentTimeSecond,
             })
           } catch (e) {
-            console.log(`Error inserting latency for ${result.id}: ${e}`)
+            console.error(`Error inserting latency for ${result.id}: ${e}`)
           }
           return result
         })
@@ -123,8 +123,8 @@ const Worker = {
               'OK'
             )
           } catch (e) {
-            console.log('Error calling callback: ')
-            console.log(e)
+            console.error('Error calling callback: ')
+            console.error(e)
           }
         }
       } else {
@@ -202,8 +202,8 @@ const Worker = {
             )
           }
         } catch (e) {
-          console.log('Error calling callback: ')
-          console.log(e)
+          console.error('Error calling callback: ')
+          console.error(e)
         }
 
         try {
@@ -216,8 +216,8 @@ const Worker = {
             status.err
           )
         } catch (e) {
-          console.log('Error calling callback: ')
-          console.log(e)
+          console.error('Error calling callback: ')
+          console.error(e)
         }
       }
 

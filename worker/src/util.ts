@@ -135,14 +135,14 @@ async function webhookNotify(webhook: WebhookConfig, message: string) {
     const resp = await fetchTimeout(url, webhook.timeout ?? 5000, { method, headers, body })
 
     if (!resp.ok) {
-      console.log(
+      console.error(
         'Error calling webhook server, code: ' + resp.status + ', response: ' + (await resp.text())
       )
     } else {
       console.log('Webhook notification sent successfully, code: ' + resp.status)
     }
   } catch (e) {
-    console.log('Error calling webhook server: ' + e)
+    console.error('Error calling webhook server: ' + e)
   }
 }
 

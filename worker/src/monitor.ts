@@ -45,7 +45,7 @@ async function httpResponseBasicCheck(
 
     // MUST contain responseKeyword
     if (monitor.responseKeyword && !responseBody.includes(monitor.responseKeyword)) {
-      console.log(
+      console.error(
         `${monitor.name} expected keyword ${
           monitor.responseKeyword
         }, not found in response (truncated to 100 chars): ${responseBody.slice(0, 100)}`
@@ -58,7 +58,7 @@ async function httpResponseBasicCheck(
       monitor.responseForbiddenKeyword &&
       responseBody.includes(monitor.responseForbiddenKeyword)
     ) {
-      console.log(
+      console.error(
         `${monitor.name} forbidden keyword ${
           monitor.responseForbiddenKeyword
         }, found in response (truncated to 100 chars): ${responseBody.slice(0, 100)}`
@@ -200,7 +200,7 @@ export async function getStatusWithGlobalPing(
       measurementResult.status !== 'finished' ||
       measurementResult.results[0].result.status !== 'finished'
     ) {
-      console.log(
+      console.error(
         `measurement failed with status: ${measurementResult.status}, result status: ${measurementResult.results[0].result.status}`
       )
       // Truncate raw output to avoid huge error messages
@@ -229,14 +229,14 @@ export async function getStatusWithGlobalPing(
 
       let err = await httpResponseBasicCheck(monitor, code, () => body)
       if (err !== null) {
-        console.log(`${monitor.name} didn't pass response check: ${err}`)
+        console.error(`${monitor.name} didn't pass response check: ${err}`)
       }
 
       if (
         monitor.target.toLowerCase().startsWith('https') &&
         !measurementResult.results[0].result.tls.authorized
       ) {
-        console.log(
+        console.error(
           `${monitor.name} TLS certificate not trusted: ${measurementResult.results[0].result.tls.error}`
         )
         err = 'TLS certificate not trusted: ' + measurementResult.results[0].result.tls.error
@@ -252,7 +252,7 @@ export async function getStatusWithGlobalPing(
       }
     }
   } catch (e: any) {
-    console.log(`Globalping ${monitor.name} errored with ${e}`)
+    console.error(`Globalping ${monitor.name} errored with ${e}`)
     return {
       location: 'ERROR',
       status: {
@@ -295,7 +295,7 @@ export async function getStatus(
       status.up = true
       status.err = ''
     } catch (e: Error | any) {
-      console.log(`${monitor.name} errored with ${e.name}: ${e.message}`)
+      console.error(`${monitor.name} errored with ${e.name}: ${e.message}`)
       if (e.message.includes('timed out')) {
         status.ping = monitor.timeout || 10000
       }
@@ -334,12 +334,12 @@ export async function getStatus(
       } catch (e) {} // Always try to cancel body, see issue #166
 
       if (err !== null) {
-        console.log(`${monitor.name} didn't pass response check: ${err}`)
+        console.error(`${monitor.name} didn't pass response check: ${err}`)
       }
       status.up = err === null
       status.err = err ?? ''
     } catch (e: any) {
-      console.log(`${monitor.name} errored with ${e.name}: ${e.message}`)
+      console.error(`${monitor.name} errored with ${e.name}: ${e.message}`)
       if (e.name === 'AbortError') {
         status.ping = monitor.timeout || 10000
         status.up = false
@@ -387,9 +387,9 @@ export async function doMonitor(monitor: MonitorTarget, defaultLocation: string,
       checkLocation = resp.location
       status = resp.status
     } catch (err) {
-      console.log(`[${monitor.id}] Error calling proxy: ${err}`)
+      console.error(`[${monitor.id}] Error calling proxy: ${err}`)
       if (monitor.checkProxyFallback) {
-        console.log('Falling back to local check...')
+        console.error('Falling back to local check...')
         status = await getStatus(monitor)
       } else {
         // TODO: more consistent error handling (throw or return?)
