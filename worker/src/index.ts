@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers'
 import { MonitorTarget } from '../../types/config'
 import { workerConfig } from '../../uptime.config'
-import { doMonitor, getStatus } from './monitor'
+import { DEFAULT_TIMEOUT_MS, doMonitor, getStatus } from './monitor'
 import { formatAndNotify, getWorkerLocation } from './util'
 import {
   INCIDENT_RETENTION_SECONDS,
@@ -22,6 +22,11 @@ export interface Env {
   UPTIMEFLARE_D1: D1Database
 }
 
+// Tracks whether ensureSchema() has run in this isolate, so we do it once per
+// cold start instead of every tick. A fresh deploy or recycled isolate re-runs
+// it, which is enough to self-heal the schema.
+let schemaEnsured = false
+
 const Worker = {
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     const workerLocation = (await getWorkerLocation()) || 'ERROR'
@@ -29,8 +34,10 @@ const Worker = {
 
     const db = env.UPTIMEFLARE_D1
 
-    // Make sure the relational tables exist (self-healing for existing deployments).
-    await ensureSchema(db)
+    if (!schemaEnsured) {
+      await ensureSchema(db)
+      schemaEnsured = true
+    }
 
     const currentTimeSecond = Math.round(Date.now() / 1000)
 
@@ -51,7 +58,7 @@ const Worker = {
           // down sample always reads as the worst case, like a real timeout would.
           const ping = result.status.up
             ? result.status.ping
-            : monitor.timeout ?? 6000
+            : monitor.timeout ?? DEFAULT_TIMEOUT_MS
           // Persist the latency sample as soon as the check resolves, so a sample
           // is never lost if a later monitor's processing fails or the scheduled
           // invocation is terminated before the incident-processing loop finishes.
@@ -221,28 +228,34 @@ const Worker = {
         }
       }
 
-      // latency sample for this tick was already persisted in the parallel check
-      // phase above; here we only handle retention/cleanup.
+      // (latency sample for this tick was already persisted in the parallel check phase above)
+    }
 
-      // discard old latency data outside the retention window
-      await deleteOldLatency(db, monitor.id, currentTimeSecond - LATENCY_RETENTION_SECONDS)
+    // ---- Retention & maintenance: once per tick / hourly, not per monitor ----
 
-      // discard old (closed) incidents outside the retention window
-      await deleteOldClosedIncidents(db, monitor.id, currentTimeSecond - INCIDENT_RETENTION_SECONDS)
+    // Latency grows every tick, so trim it (across all monitors) each run.
+    await deleteOldLatency(db, currentTimeSecond - LATENCY_RETENTION_SECONDS)
 
-      // re-anchor the dummy incident so the 90-day bar always spans the full window
+    // Old-incident cleanup and the dummy re-anchor only matter as the 90-day
+    // window slides, so run them at most hourly. The delete must come before the
+    // re-anchor so the previous hour's stale anchor is removed first.
+    if (currentTimeSecond % 3600 < 60) {
       const incidentCutoff = currentTimeSecond - INCIDENT_RETENTION_SECONDS
-      const first = await getFirstIncident(db, monitor.id)
-      if (
-        first === null ||
-        (first.incident.start[0] > incidentCutoff && first.incident.error[0] != 'dummy')
-      ) {
-        // put the dummy anchor incident back at the start of the window
-        await insertIncident(db, monitor.id, {
-          start: [incidentCutoff],
-          end: incidentCutoff,
-          error: ['dummy'],
-        })
+      await deleteOldClosedIncidents(db, incidentCutoff)
+
+      for (const monitor of workerConfig.monitors) {
+        const first = await getFirstIncident(db, monitor.id)
+        if (
+          first === null ||
+          (first.incident.start[0] > incidentCutoff && first.incident.error[0] != 'dummy')
+        ) {
+          // put the dummy anchor incident back at the start of the window
+          await insertIncident(db, monitor.id, {
+            start: [incidentCutoff],
+            end: incidentCutoff,
+            error: ['dummy'],
+          })
+        }
       }
     }
   },

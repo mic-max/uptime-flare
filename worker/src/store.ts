@@ -126,15 +126,12 @@ export async function updateIncident(
     .run()
 }
 
-// Drop incidents that have been closed for longer than the retention window.
-export async function deleteOldClosedIncidents(
-  db: D1Database,
-  monitorId: string,
-  cutoff: number
-): Promise<void> {
+// Drop incidents (across all monitors) that have been closed for longer than the
+// retention window. Done globally rather than per-monitor to save round-trips.
+export async function deleteOldClosedIncidents(db: D1Database, cutoff: number): Promise<void> {
   await db
-    .prepare(`DELETE FROM incident WHERE monitor_id = ? AND end_time IS NOT NULL AND end_time < ?`)
-    .bind(monitorId, cutoff)
+    .prepare(`DELETE FROM incident WHERE end_time IS NOT NULL AND end_time < ?`)
+    .bind(cutoff)
     .run()
 }
 
@@ -149,15 +146,9 @@ export async function insertLatency(
     .run()
 }
 
-export async function deleteOldLatency(
-  db: D1Database,
-  monitorId: string,
-  cutoff: number
-): Promise<void> {
-  await db
-    .prepare(`DELETE FROM latency WHERE monitor_id = ? AND ts < ?`)
-    .bind(monitorId, cutoff)
-    .run()
+// Drop latency samples (across all monitors) older than the retention window.
+export async function deleteOldLatency(db: D1Database, cutoff: number): Promise<void> {
+  await db.prepare(`DELETE FROM latency WHERE ts < ?`).bind(cutoff).run()
 }
 
 export async function getLastLatency(

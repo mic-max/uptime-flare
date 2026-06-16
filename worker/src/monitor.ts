@@ -2,6 +2,10 @@ import { Env } from '.'
 import { MonitorTarget } from '../../types/config'
 import { withTimeout, fetchTimeout } from './util'
 
+// Default per-check timeout when a monitor doesn't specify one. Shared so the
+// check timeout and the "down sample = max latency" clamp in index.ts agree.
+export const DEFAULT_TIMEOUT_MS = 10000
+
 function isIpAddress(hostname: string): boolean {
   // `URL.hostname` strips brackets for IPv6, so a `:` reliably indicates an IPv6 literal here.
   if (hostname.includes(':')) return true
@@ -175,7 +179,7 @@ export async function getStatusWithGlobalPing(
     const pollStart = Date.now()
     let measurementResult: any
     while (true) {
-      if (Date.now() - pollStart > (monitor.timeout ?? 10000) + 2000) {
+      if (Date.now() - pollStart > (monitor.timeout ?? DEFAULT_TIMEOUT_MS) + 2000) {
         // 2s extra buffer
         throw 'api polling timeout'
       }
@@ -256,7 +260,7 @@ export async function getStatusWithGlobalPing(
     return {
       location: 'ERROR',
       status: {
-        ping: e.toString().toLowerCase().includes('timeout') ? monitor.timeout ?? 10000 : 0,
+        ping: e.toString().toLowerCase().includes('timeout') ? monitor.timeout ?? DEFAULT_TIMEOUT_MS : 0,
         up: false,
         err: 'Globalping error: ' + e.toString(),
       },
@@ -286,7 +290,7 @@ export async function getStatus(
       const socket = connect({ hostname: parsed.hostname, port: Number(parsed.port) })
 
       // Now we have an `opened` promise!
-      await withTimeout(monitor.timeout || 10000, socket.opened)
+      await withTimeout(monitor.timeout || DEFAULT_TIMEOUT_MS, socket.opened)
       await socket.close()
 
       console.log(`${monitor.name} connected to ${monitor.target}`)
@@ -297,7 +301,7 @@ export async function getStatus(
     } catch (e: Error | any) {
       console.error(`${monitor.name} errored with ${e.name}: ${e.message}`)
       if (e.message.includes('timed out')) {
-        status.ping = monitor.timeout || 10000
+        status.ping = monitor.timeout || DEFAULT_TIMEOUT_MS
       }
       status.up = false
       status.err = e.name + ': ' + e.message
@@ -310,7 +314,7 @@ export async function getStatus(
         headers.set('user-agent', 'UptimeFlare/1.0 (+https://github.com/lyc8503/UptimeFlare)')
       }
 
-      const response = await fetchTimeout(monitor.target, monitor.timeout || 10000, {
+      const response = await fetchTimeout(monitor.target, monitor.timeout || DEFAULT_TIMEOUT_MS, {
         method: monitor.method,
         headers: headers,
         body: monitor.body,
@@ -341,7 +345,7 @@ export async function getStatus(
     } catch (e: any) {
       console.error(`${monitor.name} errored with ${e.name}: ${e.message}`)
       if (e.name === 'AbortError') {
-        status.ping = monitor.timeout || 10000
+        status.ping = monitor.timeout || DEFAULT_TIMEOUT_MS
         status.up = false
         status.err = `Timeout after ${status.ping}ms`
       } else {
