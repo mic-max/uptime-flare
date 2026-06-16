@@ -25,7 +25,7 @@ const workerConfig: WorkerConfig = {
       target: 'https://micmax.pw',
       statusPageLink: 'https://micmax.pw',
       checkProxy: 'worker://enam',
-      hideLatencyChart: true,
+      hideLatencyChart: false,
       expectedCodes: [200],
       timeout: 10000,
       headers: {
@@ -39,7 +39,7 @@ const workerConfig: WorkerConfig = {
       target: 'https://maxwellmade.ca',
       checkProxy: 'worker://enam',
       statusPageLink: 'https://maxwellmade.ca',
-      hideLatencyChart: true,
+      hideLatencyChart: false,
       expectedCodes: [200],
       timeout: 10000,
       headers: {
@@ -53,7 +53,7 @@ const workerConfig: WorkerConfig = {
       target: 'https://site.micmax.pw',
       checkProxy: 'worker://enam',
       statusPageLink: 'https://site.micmax.pw',
-      hideLatencyChart: true,
+      hideLatencyChart: false,
       expectedCodes: [200],
       timeout: 10000,
       headers: {
@@ -67,7 +67,7 @@ const workerConfig: WorkerConfig = {
       target: 'mumble.micmax.pw:64738',
       checkProxy: 'worker://enam',
       statusPageLink: 'mumble://mumble.micmax.pw',
-      hideLatencyChart: true,
+      hideLatencyChart: false,
       timeout: 10000,
       headers: {
         'User-Agent': 'Uptimeflare',
@@ -80,7 +80,7 @@ const workerConfig: WorkerConfig = {
       target: 'minecraft.micmax.pw:25565',
       checkProxy: 'worker://enam',
       statusPageLink: 'minecraft.micmax.pw',
-      hideLatencyChart: true,
+      hideLatencyChart: false,
       timeout: 10000,
       headers: {
         'User-Agent': 'Uptimeflare',
@@ -93,7 +93,7 @@ const workerConfig: WorkerConfig = {
       target: 'https://jellyfin.micmax.pw',
       checkProxy: 'worker://enam',
       statusPageLink: 'https://jellyfin.micmax.pw',
-      hideLatencyChart: true,
+      hideLatencyChart: false,
       expectedCodes: [200],
       timeout: 10000,
       headers: {
