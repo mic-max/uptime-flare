@@ -1,10 +1,3 @@
--- Legacy key-value table (pre-2026 compacted blob). Kept so the worker can import
--- existing data into the normalized tables below on first run after upgrading.
-CREATE TABLE IF NOT EXISTS uptimeflare (
-    key VARCHAR(255) PRIMARY KEY,
-    value BLOB NOT NULL
-);
-
 -- One row per check sample.
 CREATE TABLE IF NOT EXISTS latency (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

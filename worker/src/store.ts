@@ -1,5 +1,4 @@
 import { IncidentRecord, LatencyRecord, MonitorState } from '../../types/config'
-import { LegacyCompactedState, getLegacyBlob } from './legacy'
 
 // Retention windows (seconds). Latency is kept for charts/last-value, incidents for the 90-day bar.
 export const LATENCY_RETENTION_SECONDS = 12 * 60 * 60
@@ -24,7 +23,7 @@ function rowToIncident(row: IncidentRow): { id: number; incident: IncidentRecord
 }
 
 // ---------------------------------------------------------------------------
-// Schema & migration
+// Schema
 // ---------------------------------------------------------------------------
 
 // Idempotently ensure the relational tables exist. Runs cheaply on every scheduled
@@ -55,49 +54,6 @@ export async function ensureSchema(db: D1Database): Promise<void> {
       `CREATE INDEX IF NOT EXISTS idx_incident_monitor ON incident (monitor_id, start_time, id)`
     ),
   ])
-}
-
-// One-time import of the pre-2026 compacted blob into the relational tables.
-// No-op once any incident row exists, or when there is no legacy blob to import.
-export async function migrateLegacyBlobIfNeeded(db: D1Database): Promise<void> {
-  const alreadyMigrated = await db.prepare('SELECT 1 FROM incident LIMIT 1').first()
-  if (alreadyMigrated) return
-
-  const blob = await getLegacyBlob(db)
-  if (!blob) return
-
-  console.log('Migrating legacy compacted state blob to relational tables...')
-  const state = new LegacyCompactedState(blob).uncompact()
-
-  const stmts: D1PreparedStatement[] = []
-  for (const monitorId of Object.keys(state.incident)) {
-    for (const inc of state.incident[monitorId]) {
-      stmts.push(
-        db
-          .prepare(
-            `INSERT INTO incident (monitor_id, start_time, starts, end_time, errors)
-             VALUES (?, ?, ?, ?, ?)`
-          )
-          .bind(monitorId, inc.start[0], JSON.stringify(inc.start), inc.end, JSON.stringify(inc.error))
-      )
-    }
-  }
-  for (const monitorId of Object.keys(state.latency)) {
-    for (const lat of state.latency[monitorId]) {
-      stmts.push(
-        db
-          .prepare(`INSERT INTO latency (monitor_id, ts, ping, loc) VALUES (?, ?, ?, ?)`)
-          .bind(monitorId, lat.time, lat.ping, lat.loc)
-      )
-    }
-  }
-
-  // D1 caps statements per batch; chunk to stay well under the limit.
-  const CHUNK = 50
-  for (let i = 0; i < stmts.length; i += CHUNK) {
-    await db.batch(stmts.slice(i, i + CHUNK))
-  }
-  console.log(`Legacy migration complete: ${stmts.length} rows inserted.`)
 }
 
 // ---------------------------------------------------------------------------

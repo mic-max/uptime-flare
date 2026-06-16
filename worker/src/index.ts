@@ -13,7 +13,6 @@ import {
   getLastIncident,
   insertIncident,
   insertLatency,
-  migrateLegacyBlobIfNeeded,
   updateIncident,
 } from './store'
 import pLimit from 'p-limit'
@@ -30,10 +29,8 @@ const Worker = {
 
     const db = env.UPTIMEFLARE_D1
 
-    // Make sure the relational tables exist (self-healing for existing deployments)
-    // and import the legacy compacted blob on first run after upgrading.
+    // Make sure the relational tables exist (self-healing for existing deployments).
     await ensureSchema(db)
-    await migrateLegacyBlobIfNeeded(db)
 
     const currentTimeSecond = Math.round(Date.now() / 1000)
 
