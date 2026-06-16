@@ -2,7 +2,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { MonitorTarget } from '../../types/config'
 import { workerConfig } from '../../uptime.config'
 import { DEFAULT_TIMEOUT_MS, doMonitor, getStatus } from './monitor'
-import { formatAndNotify, getWorkerLocation } from './util'
+import { formatAndNotify, getWorkerLocation, shouldNotifyDown, shouldNotifyUp } from './util'
 import {
   INCIDENT_RETENTION_SECONDS,
   LATENCY_RETENTION_SECONDS,
@@ -104,11 +104,11 @@ const Worker = {
           monitorStatusChanged = true
           try {
             if (
-              // grace period not set OR ...
-              workerConfig.notification?.gracePeriod === undefined ||
-              // only when we have sent a notification for DOWN status, we will send a notification for UP status (within 30 seconds of possible drift)
-              currentTimeSecond - lastIncident.start[0] >=
-                (workerConfig.notification.gracePeriod + 1) * 60 - 30
+              shouldNotifyUp(
+                workerConfig.notification?.gracePeriod,
+                lastIncident.start[0],
+                currentTimeSecond
+              )
             ) {
               await formatAndNotify(monitor, true, lastIncident.start[0], currentTimeSecond, 'OK')
             } else {
@@ -152,20 +152,12 @@ const Worker = {
         const currentIncident = lastIncident
         try {
           if (
-            // monitor status changed AND...
-            (monitorStatusChanged &&
-              // grace period not set OR ...
-              (workerConfig.notification?.gracePeriod === undefined ||
-                // have sent a notification for DOWN status
-                currentTimeSecond - currentIncident.start[0] >=
-                  (workerConfig.notification.gracePeriod + 1) * 60 - 30)) ||
-            // grace period is set AND...
-            (workerConfig.notification?.gracePeriod !== undefined &&
-              // grace period is met
-              currentTimeSecond - currentIncident.start[0] >=
-                workerConfig.notification.gracePeriod * 60 - 30 &&
-              currentTimeSecond - currentIncident.start[0] <
-                workerConfig.notification.gracePeriod * 60 + 30)
+            shouldNotifyDown(
+              workerConfig.notification?.gracePeriod,
+              currentIncident.start[0],
+              currentTimeSecond,
+              monitorStatusChanged
+            )
           ) {
             if (
               currentIncident.start[0] !== currentTimeSecond &&

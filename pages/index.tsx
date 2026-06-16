@@ -9,6 +9,7 @@ import { Center, Text } from '@mantine/core'
 import MonitorDetail from '@/components/MonitorDetail'
 import Footer from '@/components/Footer'
 import type { Env } from '@/worker/src'
+import type { GetServerSidePropsContext } from 'next'
 import { loadMonitorState } from '@/worker/src/store'
 
 export const runtime = 'edge'
@@ -64,7 +65,11 @@ export default function Home({
   )
 }
 
-export async function getServerSideProps() {
+export async function getServerSideProps({ res }: GetServerSidePropsContext) {
+  // The cron updates the data at most once a minute, so allow shared caches to
+  // serve a recent copy for ~30s instead of doing a full D1 read on every hit.
+  res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=30')
+
   const { workerConfig } = await import('@/uptime.config')
   // Build the full MonitorState directly from the normalized D1 tables.
   const state = await loadMonitorState((process.env as any as Env).UPTIMEFLARE_D1)

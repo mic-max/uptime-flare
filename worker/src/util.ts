@@ -1,6 +1,55 @@
 import { MonitorTarget, WebhookConfig } from '../../types/config'
 import { maintenances, workerConfig } from '../../uptime.config'
 
+// --- Notification timing -----------------------------------------------------
+// Notifications are evaluated once per minute (the cron interval), so every
+// comparison allows a ±30s drift window. `gracePeriod` (in minutes) delays a
+// DOWN notification until an outage has persisted that long; the matching UP
+// (recovery) notification is only sent if a DOWN was actually sent — i.e. the
+// outage outlived gracePeriod + 1 minute.
+const GRACE_DRIFT_SECONDS = 30
+
+// Whether to send the "recovered" (UP) notification when an incident closes.
+function shouldNotifyUp(
+  gracePeriod: number | undefined,
+  incidentStartSeconds: number,
+  nowSeconds: number
+): boolean {
+  // No grace period configured: always notify on recovery.
+  if (gracePeriod === undefined) return true
+  // Otherwise only if a DOWN notification would have been sent for this incident.
+  return nowSeconds - incidentStartSeconds >= (gracePeriod + 1) * 60 - GRACE_DRIFT_SECONDS
+}
+
+// Whether to send a DOWN notification on this tick.
+function shouldNotifyDown(
+  gracePeriod: number | undefined,
+  incidentStartSeconds: number,
+  nowSeconds: number,
+  statusChanged: boolean
+): boolean {
+  const downForSeconds = nowSeconds - incidentStartSeconds
+
+  // The status or error reason just changed: notify now, unless a grace period is
+  // configured and the outage hasn't outlived gracePeriod + 1 minute yet.
+  if (statusChanged) {
+    if (gracePeriod === undefined) return true
+    if (downForSeconds >= (gracePeriod + 1) * 60 - GRACE_DRIFT_SECONDS) return true
+  }
+
+  // Independently, fire exactly once as the outage crosses the grace-period
+  // threshold (within this tick's ±30s window), even with no change this tick.
+  if (
+    gracePeriod !== undefined &&
+    downForSeconds >= gracePeriod * 60 - GRACE_DRIFT_SECONDS &&
+    downForSeconds < gracePeriod * 60 + GRACE_DRIFT_SECONDS
+  ) {
+    return true
+  }
+
+  return false
+}
+
 async function getWorkerLocation() {
   const res = await fetch('https://cloudflare.com/cdn-cgi/trace')
   const text = await res.text()
@@ -198,4 +247,6 @@ export {
   webhookNotify,
   formatStatusChangeNotification,
   formatAndNotify,
+  shouldNotifyUp,
+  shouldNotifyDown,
 }

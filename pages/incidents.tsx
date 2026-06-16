@@ -8,6 +8,7 @@ import Footer from '@/components/Footer'
 import { useEffect, useState } from 'react'
 import MaintenanceAlert from '@/components/MaintenanceAlert'
 import NoIncidentsAlert from '@/components/NoIncidents'
+import type { GetServerSidePropsContext } from 'next'
 
 export const runtime = 'edge'
 
@@ -128,7 +129,10 @@ export default function IncidentsPage({ monitors }: { monitors: MonitorTarget[] 
   )
 }
 
-export async function getServerSideProps() {
+export async function getServerSideProps({ res }: GetServerSidePropsContext) {
+  // This page is built purely from static config, so it can be cached longer.
+  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=300')
+
   const { workerConfig } = await import('@/uptime.config')
   // Only present these values to client
   const monitors: MonitorTarget[] = workerConfig.monitors.map((monitor) => ({
