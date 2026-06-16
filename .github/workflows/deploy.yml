@@ -154,8 +154,19 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
+      # Cache the installed node_modules, not just the npm download cache, so an
+      # unchanged lockfile skips the resolve+link entirely instead of rebuilding
+      # the tree every run.
+      - name: Cache node_modules
+        id: node-modules-cache
+        uses: actions/cache@v5
+        with:
+          path: node_modules
+          key: node-modules-node24-${{ hashFiles('package-lock.json') }}
+
       - name: Install root packages
-        run: npm install
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Cache Next.js build
         uses: actions/cache@v5
