@@ -82,6 +82,26 @@ To contribute new features or customize your deployment furthermore, see [here](
 
 ## MicMax Setup
 
+### First-time setup (one time only)
+
+The GitHub Actions deploy no longer creates the D1 database on every run. Before
+the first deploy, create the database once and store its id as a secret.
+
+1. Create the database (pick one):
+   - `npx wrangler d1 create uptimeflare_d1`, then copy the printed `database_id`, **or**
+   - run `python deploy/init_d1.py` with `CLOUDFLARE_API_TOKEN` and
+     `CLOUDFLARE_ACCOUNT_ID` set — it creates the DB, prints the id, and creates the tables.
+
+   You can also find the id later under Dashboard → Workers & Pages → D1 →
+   `uptimeflare_d1`, or via `npx wrangler d1 list`.
+
+2. Store the id as a GitHub Actions secret so Terraform can import the existing DB:
+
+   `gh secret set CLOUDFLARE_D1_ID --body "<the-database-id>"`
+
+You don't need to create the tables manually — the worker's `ensureSchema()` runs
+`CREATE TABLE IF NOT EXISTS` on its first scheduled tick (within ~1 minute of deploy).
+
 ### Adding Pushover
 `cd worker`
 `npx wrangler secret put PUSHOVER_TOKEN --name uptimeflare_worker`
