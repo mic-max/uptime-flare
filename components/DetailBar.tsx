@@ -3,7 +3,6 @@ import { getColor } from '@/util/color'
 import { Box, Tooltip, Modal } from '@mantine/core'
 import { useResizeObserver } from '@mantine/hooks'
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
 const moment = require('moment')
 require('moment-precise-range-plugin')
 
@@ -14,7 +13,6 @@ export default function DetailBar({
   monitor: MonitorTarget
   state: MonitorState
 }) {
-  const { t } = useTranslation('common')
   const [barRef, barRect] = useResizeObserver()
   const [modalOpened, setModalOpened] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
@@ -81,20 +79,18 @@ export default function DetailBar({
         events={{ hover: true, focus: false, touch: true }}
         label={
           Number.isNaN(Number(dayPercent)) ? (
-            t('No Data')
+            'No Data'
           ) : (
             <>
               <div>
-                {t('percent at date', {
-                  percent: dayPercent,
-                  date: new Date(dayStart * 1000).toLocaleDateString(),
-                })}
+                {`${dayPercent}% at ${new Date(dayStart * 1000).toLocaleDateString()}`}
               </div>
               {dayDownTime > 0 && (
                 <div>
-                  {t('Down for', {
-                    duration: moment.preciseDiff(moment(0), moment(dayDownTime * 1000)),
-                  })}
+                  {`Down for ${moment.preciseDiff(
+                    moment(0),
+                    moment(dayDownTime * 1000)
+                  )} (click for detail)`}
                 </div>
               )}
             </>
@@ -113,10 +109,9 @@ export default function DetailBar({
           onClick={() => {
             if (dayDownTime > 0) {
               setModalTitle(
-                t('incidents at', {
-                  name: monitor.name,
-                  date: new Date(dayStart * 1000).toLocaleDateString(),
-                })
+                `🚨 ${monitor.name} incidents at ${new Date(
+                  dayStart * 1000
+                ).toLocaleDateString()}`
               )
               setModelContent(
                 <>

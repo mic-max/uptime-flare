@@ -9,7 +9,6 @@ import MonitorList from '@/components/MonitorList'
 import { Center, Text } from '@mantine/core'
 import MonitorDetail from '@/components/MonitorDetail'
 import Footer from '@/components/Footer'
-import { useTranslation } from 'react-i18next'
 import type { Env } from '@/worker/src'
 import { loadMonitorState } from '@/worker/src/store'
 
@@ -25,14 +24,12 @@ export default function Home({
   tooltip?: string
   statusPageLink?: string
 }) {
-  const { t } = useTranslation('common')
-
   // Specify monitorId in URL hash to view a specific monitor (can be used in iframe)
   const monitorId = window.location.hash.substring(1)
   if (monitorId) {
     const monitor = monitors.find((monitor) => monitor.id === monitorId)
     if (!monitor || !state) {
-      return <Text fw={700}>{t('Monitor not found', { id: monitorId })}</Text>
+      return <Text fw={700}>{`Monitor with id ${monitorId} not found!`}</Text>
     }
     return (
       <div style={{ maxWidth: '810px' }}>
@@ -52,7 +49,9 @@ export default function Home({
 
         {state.lastUpdate === 0 ? (
           <Center>
-            <Text fw={700}>{t('Monitor State not defined')}</Text>
+            <Text fw={700}>
+              Monitor State is not defined now, please check your worker&apos;s status and binding!
+            </Text>
           </Center>
         ) : (
           <div>

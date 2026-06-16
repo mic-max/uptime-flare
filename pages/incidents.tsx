@@ -9,7 +9,6 @@ import Footer from '@/components/Footer'
 import { useEffect, useState } from 'react'
 import MaintenanceAlert from '@/components/MaintenanceAlert'
 import NoIncidentsAlert from '@/components/NoIncidents'
-import { useTranslation } from 'react-i18next'
 
 export const runtime = 'experimental-edge'
 const inter = Inter({ subsets: ['latin'] })
@@ -55,7 +54,6 @@ function getPrevNextMonth(monthStr: string) {
 }
 
 export default function IncidentsPage({ monitors }: { monitors: MonitorTarget[] }) {
-  const { t } = useTranslation('common')
   const [selectedMonitor, setSelectedMonitor] = useState<string | null>('')
   const [selectedMonth, setSelectedMonth] = useState(getSelectedMonth())
 
@@ -73,7 +71,7 @@ export default function IncidentsPage({ monitors }: { monitors: MonitorTarget[] 
   const { prev, next } = getPrevNextMonth(selectedMonth)
 
   const monitorOptions = [
-    { value: '', label: t('All') },
+    { value: '', label: 'All' },
     ...monitors.map((monitor) => ({
       value: monitor.id,
       label: monitor.name,
@@ -96,7 +94,7 @@ export default function IncidentsPage({ monitors }: { monitors: MonitorTarget[] 
           <Container size="md" style={{ width: '100%' }}>
             <Group justify="end" mb="md">
               <Select
-                placeholder={t('Select monitor')}
+                placeholder={'Select monitor'}
                 data={monitorOptions}
                 value={selectedMonitor}
                 onChange={setSelectedMonitor}
@@ -115,13 +113,13 @@ export default function IncidentsPage({ monitors }: { monitors: MonitorTarget[] 
             </Box>
             <Group justify="space-between" mt="md">
               <Button variant="default" onClick={() => (window.location.hash = prev)}>
-                {t('Backwards')}
+                ← Backwards
               </Button>
               <Box style={{ alignSelf: 'center', fontWeight: 500, fontSize: 18 }}>
                 {selectedMonth}
               </Box>
               <Button variant="default" onClick={() => (window.location.hash = next)}>
-                {t('Forward')}
+                Forward →
               </Button>
             </Group>
           </Container>

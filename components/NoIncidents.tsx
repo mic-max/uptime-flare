@@ -1,9 +1,7 @@
 import { Alert, Text } from '@mantine/core'
 import { IconInfoCircle } from '@tabler/icons-react'
-import { useTranslation } from 'react-i18next'
 
 export default function NoIncidentsAlert({ style }: { style?: React.CSSProperties }) {
-  const { t } = useTranslation('common')
   return (
     <Alert
       icon={<IconInfoCircle />}
@@ -14,7 +12,7 @@ export default function NoIncidentsAlert({ style }: { style?: React.CSSPropertie
             fontWeight: 700,
           }}
         >
-          {t('No incidents in this month')}
+          {'No incidents in this month'}
         </span>
       }
       color="gray"
@@ -25,7 +23,7 @@ export default function NoIncidentsAlert({ style }: { style?: React.CSSPropertie
         ...style,
       }}
     >
-      <Text>{t('There are no incidents for this month')}</Text>
+      <Text>There are no incidents for this month.</Text>
     </Alert>
   )
 }

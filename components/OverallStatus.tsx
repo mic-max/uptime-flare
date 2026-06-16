@@ -4,7 +4,6 @@ import { IconCircleCheck, IconAlertCircle, IconPlus, IconMinus } from '@tabler/i
 import { useEffect, useState } from 'react'
 import MaintenanceAlert from './MaintenanceAlert'
 import { pageConfig } from '@/uptime.config'
-import { useTranslation } from 'react-i18next'
 
 function useWindowVisibility() {
   const [isVisible, setIsVisible] = useState(true)
@@ -25,24 +24,22 @@ export default function OverallStatus({
   maintenances: MaintenanceConfig[]
   monitors: MonitorTarget[]
 }) {
-  const { t } = useTranslation('common')
   let group = pageConfig.group
   let groupedMonitor = (group && Object.keys(group).length > 0) || false
 
   let statusString = ''
   let icon = <IconAlertCircle style={{ width: 64, height: 64, color: '#b91c1c' }} />
   if (state.overallUp === 0 && state.overallDown === 0) {
-    statusString = t('No data yet')
+    statusString = 'No data yet'
   } else if (state.overallUp === 0) {
-    statusString = t('All systems not operational')
+    statusString = 'All systems not operational'
   } else if (state.overallDown === 0) {
-    statusString = t('All systems operational')
+    statusString = 'All systems operational'
     icon = <IconCircleCheck style={{ width: 64, height: 64, color: '#059669' }} />
   } else {
-    statusString = t('Some systems not operational', {
-      down: state.overallDown,
-      total: state.overallUp + state.overallDown,
-    })
+    statusString = `Some systems not operational (${state.overallDown} out of ${
+      state.overallUp + state.overallDown
+    })`
   }
 
   const [openTime] = useState(Math.round(Date.now() / 1000))
@@ -92,22 +89,23 @@ export default function OverallStatus({
         {statusString}
       </Title>
       <Title mt="sm" style={{ textAlign: 'center', color: '#70778c' }} order={5}>
-        {t('Last updated on', {
-          date: new Date(state.lastUpdate * 1000).toLocaleString(),
-          seconds: currentTime - state.lastUpdate,
-        })}
+        {`Last updated on: ${new Date(state.lastUpdate * 1000).toLocaleString()} (${
+          currentTime - state.lastUpdate
+        } sec ago)`}
       </Title>
 
       {/* Upcoming Maintenance */}
       {upcomingMaintenances.length > 0 && (
         <>
           <Title mt="4px" style={{ textAlign: 'center', color: '#70778c' }} order={5}>
-            {t('upcoming maintenance', { count: upcomingMaintenances.length })}{' '}
+            {`${upcomingMaintenances.length} upcoming maintenance${
+              upcomingMaintenances.length === 1 ? '' : 's'
+            }`}{' '}
             <span
               style={{ textDecoration: 'underline', cursor: 'pointer' }}
               onClick={() => setExpandUpcoming(!expandUpcoming)}
             >
-              {expandUpcoming ? t('Hide') : t('Show')}
+              {expandUpcoming ? '[Hide]' : '[Show]'}
             </span>
           </Title>
 

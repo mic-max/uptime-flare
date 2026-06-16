@@ -5,7 +5,6 @@ import DetailChart from './DetailChart'
 import DetailBar from './DetailBar'
 import { getColor } from '@/util/color'
 import { maintenances } from '@/uptime.config'
-import { useTranslation } from 'react-i18next'
 
 export default function MonitorDetail({
   monitor,
@@ -14,8 +13,6 @@ export default function MonitorDetail({
   monitor: MonitorTarget
   state: MonitorState
 }) {
-  const { t } = useTranslation('common')
-
   if (!state.latency[monitor.id])
     return (
       <>
@@ -23,7 +20,8 @@ export default function MonitorDetail({
           {monitor.name}
         </Text>
         <Text mt="sm" fw={700}>
-          {t('No data available')}
+          No data available, please make sure you have deployed your workers with latest config and
+          check your worker status!
         </Text>
       </>
     )
@@ -93,7 +91,7 @@ export default function MonitorDetail({
         )}
 
         <Text mt="sm" fw={700} style={{ display: 'inline', color: getColor(uptimePercent, true) }}>
-          {t('Overall', { percent: uptimePercent })}
+          {`Overall: ${uptimePercent}%`}
         </Text>
       </div>
 

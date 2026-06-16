@@ -13,7 +13,6 @@ import {
 import 'chartjs-adapter-moment'
 import { MonitorState, MonitorTarget } from '@/types/config'
 import { codeToCountry } from '@/util/iata'
-import { useTranslation } from 'react-i18next'
 
 ChartJS.register(
   CategoryScale,
@@ -33,7 +32,6 @@ export default function DetailChart({
   monitor: MonitorTarget
   state: MonitorState
 }) {
-  const { t } = useTranslation('common')
   const latencyData = state.latency[monitor.id].map((point) => ({
     x: point.time * 1000,
     y: point.ping,
@@ -78,7 +76,7 @@ export default function DetailChart({
       },
       title: {
         display: true,
-        text: t('Response times'),
+        text: 'Response times(ms)',
         align: 'start' as const,
       },
     },

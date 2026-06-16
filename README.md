@@ -20,7 +20,6 @@ New users can deploy directly, while existing users can have a simple auto migra
   - Custom status code & keyword checks for HTTP(s)
   - Downtime notification supporting [100+ notification channels](https://github.com/caronc/apprise/wiki)
   - Customizable Webhook
-  - Multi-language support (English/Chinese)
 - Status page
   - Interactive ping (response time) chart for all types of monitors
   - Scheduled maintenances alerts & Incident history page
