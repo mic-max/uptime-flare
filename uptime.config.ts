@@ -6,7 +6,7 @@ import { MaintenanceConfig, PageConfig, WorkerConfig } from './types/config'
 const pageConfig: PageConfig = {
   title: "MicMax's Status",
   links: [
-    { link: 'https://github.com/mic-max', label: 'GitHub' },
+    { link: 'https://github.com/mic-max/uptime-flare', label: 'GitHub' },
     { link: 'mailto:yo@micmax.pw', label: 'Email Me', highlight: true },
   ],
   customFooter: '',
