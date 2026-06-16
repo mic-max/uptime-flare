@@ -44,7 +44,6 @@ jobs:
               - 'util/**'
               - 'styles/**'
               - 'public/**'
-              - 'middleware.ts'
               - 'next.config.js'
               - 'tsconfig.json'
               - 'package.json'

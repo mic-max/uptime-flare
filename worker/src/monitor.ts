@@ -6,28 +6,6 @@ import { withTimeout, fetchTimeout } from './util'
 // check timeout and the "down sample = max latency" clamp in index.ts agree.
 export const DEFAULT_TIMEOUT_MS = 10000
 
-function isIpAddress(hostname: string): boolean {
-  // `URL.hostname` strips brackets for IPv6, so a `:` reliably indicates an IPv6 literal here.
-  if (hostname.includes(':')) return true
-
-  const parts = hostname.split('.')
-  if (parts.length !== 4) return false
-
-  return parts.every((part) => {
-    if (!/^\d{1,3}$/.test(part)) return false
-    const value = Number(part)
-    return value >= 0 && value <= 255
-  })
-}
-
-function getDomainOnlyIpVersionOption(hostname: string, gpUrl: URL): { ipVersion?: number } {
-  // Globalping only allows `measurementOptions.ipVersion` when `target` is a domain (it controls DNS resolution).
-  if (isIpAddress(hostname)) return {}
-
-  // Keep the original behavior for domain targets.
-  return { ipVersion: Number(gpUrl.searchParams.get('ipVersion') || 4) }
-}
-
 async function httpResponseBasicCheck(
   monitor: MonitorTarget,
   code: number,
@@ -72,200 +50,6 @@ async function httpResponseBasicCheck(
   }
 
   return null
-}
-
-export async function getStatusWithGlobalPing(
-  monitor: MonitorTarget
-): Promise<{ location: string; status: { ping: number; up: boolean; err: string } }> {
-  // TODO: should throw when there's error with globalping API
-  try {
-    if (monitor.checkProxy === undefined) {
-      throw "empty check proxy for globalping, shouldn't call this method"
-    }
-
-    const gpUrl = new URL(monitor.checkProxy)
-    if (gpUrl.protocol !== 'globalping:') {
-      throw 'incorrect check proxy protocol for globalping, got: ' + gpUrl.protocol
-    }
-
-    const token = gpUrl.hostname
-    let globalPingRequest = {}
-
-    if (monitor.method === 'TCP_PING') {
-      const targetUrl = new URL('https://' + monitor.target) // dummy https:// to parse hostname & port
-      const ipVersionOption = getDomainOnlyIpVersionOption(targetUrl.hostname, gpUrl)
-      globalPingRequest = {
-        type: 'ping',
-        target: targetUrl.hostname,
-        locations:
-          gpUrl.searchParams.get('magic') !== null
-            ? [
-                {
-                  magic: gpUrl.searchParams.get('magic'),
-                },
-              ]
-            : undefined,
-        measurementOptions: {
-          port: targetUrl.port,
-          packets: 1,
-          protocol: 'tcp', // TODO: icmp?
-          ...ipVersionOption,
-        },
-      }
-    } else {
-      const targetUrl = new URL(monitor.target)
-      const ipVersionOption = getDomainOnlyIpVersionOption(targetUrl.hostname, gpUrl)
-      if (monitor.body !== undefined) {
-        throw 'custom body not supported'
-      }
-      if (monitor.method && !['GET', 'HEAD', 'OPTIONS'].includes(monitor.method.toUpperCase())) {
-        throw 'only GET, HEAD, OPTIONS methods are supported'
-      }
-      globalPingRequest = {
-        type: 'http',
-        target: targetUrl.hostname,
-        locations:
-          gpUrl.searchParams.get('magic') !== null
-            ? [
-                {
-                  magic: gpUrl.searchParams.get('magic'),
-                },
-              ]
-            : undefined,
-        measurementOptions: {
-          request: {
-            method: monitor.method,
-            path: targetUrl.pathname,
-            query: targetUrl.search === '' ? undefined : targetUrl.search,
-            headers: Object.fromEntries(
-              Object.entries(monitor.headers ?? {}).map(([key, value]) => [key, String(value)])
-            ), // TODO: host header?
-          },
-          port:
-            targetUrl.port === ''
-              ? targetUrl.protocol === 'http:'
-                ? 80
-                : 443
-              : Number(targetUrl.port),
-          protocol: targetUrl.protocol.replace(':', ''),
-          ...ipVersionOption,
-        },
-      }
-    }
-
-    const startTime = Date.now()
-    console.log(`Requesting the Global Ping API, payload: ${JSON.stringify(globalPingRequest)}`)
-    const measurement = await fetchTimeout('https://api.globalping.io/v1/measurements', 5000, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + token,
-      },
-      body: JSON.stringify(globalPingRequest),
-    })
-    const measurementResponse = (await measurement.json()) as any
-
-    if (measurement.status !== 202) {
-      throw measurementResponse.error.message
-    }
-
-    const measurementId = measurementResponse.id
-    console.log(
-      `Measurement created successfully, id: ${measurementId}, time elapsed: ${
-        Date.now() - startTime
-      }ms`
-    )
-
-    const pollStart = Date.now()
-    let measurementResult: any
-    while (true) {
-      if (Date.now() - pollStart > (monitor.timeout ?? DEFAULT_TIMEOUT_MS) + 2000) {
-        // 2s extra buffer
-        throw 'api polling timeout'
-      }
-
-      measurementResult = (await (
-        await fetchTimeout(`https://api.globalping.io/v1/measurements/${measurementId}`, 5000)
-      ).json()) as any
-      if (measurementResult.status !== 'in-progress') {
-        break
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-    }
-
-    console.log(
-      `Measurement ${measurementId} finished with response: ${JSON.stringify(
-        measurementResult
-      )}, time elapsed: ${Date.now() - pollStart}ms`
-    )
-
-    if (
-      measurementResult.status !== 'finished' ||
-      measurementResult.results[0].result.status !== 'finished'
-    ) {
-      console.error(
-        `measurement failed with status: ${measurementResult.status}, result status: ${measurementResult.results[0].result.status}`
-      )
-      // Truncate raw output to avoid huge error messages
-      throw `status [${measurementResult.status}|${
-        measurementResult.results[0].result.status
-      }]: ${measurementResult.results?.[0].result?.rawOutput?.slice(0, 64)}`
-    }
-
-    const country = measurementResult.results[0].probe.country
-    const city = measurementResult.results[0].probe.city
-
-    if (monitor.method === 'TCP_PING') {
-      const time = Math.round(measurementResult.results[0].result.stats.avg)
-      return {
-        location: country + '/' + city,
-        status: {
-          ping: time,
-          up: true,
-          err: '',
-        },
-      }
-    } else {
-      const time = measurementResult.results[0].result.timings.total
-      const code = measurementResult.results[0].result.statusCode
-      const body = measurementResult.results[0].result.rawBody
-
-      let err = await httpResponseBasicCheck(monitor, code, () => body)
-      if (err !== null) {
-        console.error(`${monitor.name} didn't pass response check: ${err}`)
-      }
-
-      if (
-        monitor.target.toLowerCase().startsWith('https') &&
-        !measurementResult.results[0].result.tls.authorized
-      ) {
-        console.error(
-          `${monitor.name} TLS certificate not trusted: ${measurementResult.results[0].result.tls.error}`
-        )
-        err = 'TLS certificate not trusted: ' + measurementResult.results[0].result.tls.error
-      }
-
-      return {
-        location: country + '/' + city,
-        status: {
-          ping: time,
-          up: err === null,
-          err: err ?? '',
-        },
-      }
-    }
-  } catch (e: any) {
-    console.error(`Globalping ${monitor.name} errored with ${e}`)
-    return {
-      location: 'ERROR',
-      status: {
-        ping: e.toString().toLowerCase().includes('timeout') ? monitor.timeout ?? DEFAULT_TIMEOUT_MS : 0,
-        up: false,
-        err: 'Globalping error: ' + e.toString(),
-      },
-    }
-  }
 }
 
 export async function getStatus(
@@ -328,11 +112,7 @@ export async function getStatus(
       console.log(`${monitor.name} responded with ${response.status}`)
       status.ping = Date.now() - startTime
 
-      const err = await httpResponseBasicCheck(
-        monitor,
-        response.status,
-        response.text.bind(response)
-      )
+      const err = await httpResponseBasicCheck(monitor, response.status, response.text.bind(response))
       try {
         await response.body?.cancel()
       } catch (e) {} // Always try to cancel body, see issue #166
@@ -362,50 +142,32 @@ export async function doMonitor(monitor: MonitorTarget, defaultLocation: string,
   let checkLocation = defaultLocation
   let status
 
-  if (monitor.checkProxy) {
-    // Initiate a check using proxy (Geo-specific monitoring)
+  if (monitor.checkProxy?.startsWith('worker://')) {
+    // Geo-specific check: run getStatus inside a Durable Object pinned to a region.
     try {
       console.log(`[${monitor.id}] Calling check proxy: ${monitor.checkProxy}`)
-      let resp
-      if (monitor.checkProxy.startsWith('worker://')) {
-        const doLoc = monitor.checkProxy.replace('worker://', '')
-        const doId = env.REMOTE_CHECKER_DO.idFromName(monitor.id)
-        const doStub = env.REMOTE_CHECKER_DO.get(doId, {
-          locationHint: doLoc as DurableObjectLocationHint,
-        })
-        resp = await doStub.getLocationAndStatus(monitor)
-        // No explicit teardown: the checker holds no state, so the runtime
-        // hibernates and evicts the idle instance on its own (and reuses it on
-        // the next tick). Force-killing it only added cold-starts and error logs.
-      } else if (monitor.checkProxy.startsWith('globalping://')) {
-        resp = await getStatusWithGlobalPing(monitor)
-      } else {
-        resp = await (
-          await fetch(monitor.checkProxy, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(monitor),
-          })
-        ).json<{ location: string; status: { ping: number; up: boolean; err: string } }>()
-      }
+      const doLoc = monitor.checkProxy.replace('worker://', '')
+      const doId = env.REMOTE_CHECKER_DO.idFromName(monitor.id)
+      const doStub = env.REMOTE_CHECKER_DO.get(doId, {
+        locationHint: doLoc as DurableObjectLocationHint,
+      })
+      // No explicit teardown: the checker holds no state, so the runtime hibernates
+      // and evicts the idle instance on its own (and reuses it on the next tick).
+      const resp = await doStub.getLocationAndStatus(monitor)
       checkLocation = resp.location
       status = resp.status
     } catch (err) {
       console.error(`[${monitor.id}] Error calling proxy: ${err}`)
-      if (monitor.checkProxyFallback) {
-        console.error('Falling back to local check...')
-        status = await getStatus(monitor)
-      } else {
-        // TODO: more consistent error handling (throw or return?)
-        status = { ping: 0, up: false, err: 'Unknown check proxy error' }
-      }
+      status = { ping: 0, up: false, err: 'Unknown check proxy error' }
     }
   } else {
-    // Initiate a check from the current location
+    // Initiate a check from the current location.
     status = await getStatus(monitor)
   }
 
-  console.log(`[${monitor.id}] Check result from ${checkLocation}: up=${status.up}, ping=${status.ping}, err=${status.err}`)
+  console.log(
+    `[${monitor.id}] Check result from ${checkLocation}: up=${status.up}, ping=${status.ping}, err=${status.err}`
+  )
 
   return {
     location: checkLocation,

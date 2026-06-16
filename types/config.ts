@@ -1,5 +1,3 @@
-import type { Env } from '../worker/src'
-
 export type PageConfig = {
   title?: string
   links?: PageConfigLink[]
@@ -42,22 +40,17 @@ export type MonitorTarget = {
   responseKeyword?: string
   responseForbiddenKeyword?: string
   checkProxy?: string
-  checkProxyFallback?: boolean
 }
 
-export type WorkerConfig<TEnv = Env> = {
-  passwordProtection?: string
+export type WorkerConfig = {
   monitors: MonitorTarget[]
   notification?: Notification
-  callbacks?: Callbacks<TEnv>
 }
 
 export type Notification = {
   webhook?: WebhookConfig
   timeZone?: string
   gracePeriod?: number
-  skipNotificationIds?: string[]
-  skipErrorChangeNotification?: boolean
 }
 
 type SingleWebhook = {
@@ -70,24 +63,6 @@ type SingleWebhook = {
 }
 
 export type WebhookConfig = SingleWebhook | SingleWebhook[]
-
-export type Callbacks<TEnv = Env> = {
-  onStatusChange?: (
-    env: TEnv,
-    monitor: MonitorTarget,
-    isUp: boolean,
-    timeIncidentStart: number,
-    timeNow: number,
-    reason: string
-  ) => Promise<any> | any
-  onIncident?: (
-    env: TEnv,
-    monitor: MonitorTarget,
-    timeIncidentStart: number,
-    timeNow: number,
-    reason: string
-  ) => Promise<any> | any
-}
 
 export type IncidentRecord = {
   start: number[]

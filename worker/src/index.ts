@@ -116,19 +116,8 @@ const Worker = {
                 `grace period (${workerConfig.notification?.gracePeriod}m) not met, skipping webhook UP notification for ${monitor.name}`
               )
             }
-
-            console.log('Calling config onStatusChange callback...')
-            await workerConfig.callbacks?.onStatusChange?.(
-              env,
-              monitor,
-              true,
-              lastIncident.start[0],
-              currentTimeSecond,
-              'OK'
-            )
           } catch (e) {
-            console.error('Error calling callback: ')
-            console.error(e)
+            console.error('Error sending UP notification: ', e)
           }
         }
       } else {
@@ -159,22 +148,7 @@ const Worker = {
               monitorStatusChanged
             )
           ) {
-            if (
-              currentIncident.start[0] !== currentTimeSecond &&
-              workerConfig.notification?.skipErrorChangeNotification
-            ) {
-              console.log(
-                'Skipping notification for following error reason change due to user config'
-              )
-            } else {
-              await formatAndNotify(
-                monitor,
-                false,
-                currentIncident.start[0],
-                currentTimeSecond,
-                status.err
-              )
-            }
+            await formatAndNotify(monitor, false, currentIncident.start[0], currentTimeSecond, status.err)
           } else {
             console.log(
               `Grace period (${workerConfig.notification
@@ -185,35 +159,8 @@ const Worker = {
               }`
             )
           }
-
-          if (monitorStatusChanged) {
-            console.log('Calling config onStatusChange callback...')
-            await workerConfig.callbacks?.onStatusChange?.(
-              env,
-              monitor,
-              false,
-              currentIncident.start[0],
-              currentTimeSecond,
-              status.err
-            )
-          }
         } catch (e) {
-          console.error('Error calling callback: ')
-          console.error(e)
-        }
-
-        try {
-          console.log('Calling config onIncident callback...')
-          await workerConfig.callbacks?.onIncident?.(
-            env,
-            monitor,
-            currentIncident.start[0],
-            currentTimeSecond,
-            status.err
-          )
-        } catch (e) {
-          console.error('Error calling callback: ')
-          console.error(e)
+          console.error('Error sending DOWN notification: ', e)
         }
       }
 

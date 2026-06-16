@@ -203,13 +203,6 @@ const formatAndNotify = async (
   timeNow: number,
   reason: string
 ) => {
-  // Skip notification if monitor is in the skip list
-  const skipList = workerConfig.notification?.skipNotificationIds
-  if (skipList && skipList.includes(monitor.id)) {
-    console.log(`Skipping notification for ${monitor.name} (${monitor.id} in skipNotificationIds)`)
-    return
-  }
-
   // Skip notification if monitor is in maintenance
   const maintenanceList = maintenances
     .filter(

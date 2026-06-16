@@ -77,18 +77,13 @@ export async function getServerSideProps({ res }: GetServerSidePropsContext) {
   const state = await loadMonitorState((process.env as any as Env).UPTIMEFLARE_D1)
 
   // Only present these values to client
-  const monitors = workerConfig.monitors.map((monitor) => {
-    return {
-      id: monitor.id,
-      name: monitor.name,
-      // @ts-ignore
-      tooltip: monitor?.tooltip,
-      // @ts-ignore
-      statusPageLink: monitor?.statusPageLink,
-      // @ts-ignore
-      hideLatencyChart: monitor?.hideLatencyChart,
-    }
-  })
+  const monitors = workerConfig.monitors.map((monitor) => ({
+    id: monitor.id,
+    name: monitor.name,
+    tooltip: monitor.tooltip,
+    statusPageLink: monitor.statusPageLink,
+    hideLatencyChart: monitor.hideLatencyChart,
+  }))
 
   return { props: { state, monitors } }
 }
