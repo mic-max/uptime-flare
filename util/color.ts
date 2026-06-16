@@ -1,16 +1,15 @@
-function getColor(percent: number | string, darker: boolean): string {
-  percent = Number(percent)
-  if (percent >= 99.9) {
-    return darker ? '#059669' : '#3bd671'
-  } else if (percent >= 99) {
-    return darker ? '#3bd671' : '#9deab8'
-  } else if (percent >= 95) {
-    return '#f29030'
-  } else if (Number.isNaN(percent)) {
-    return 'gray'
-  } else {
-    return '#df484a'
-  }
+// Maps an uptime percentage to one of a few discrete status levels. Components
+// translate the level into a CSS class (see styles/StatusBar.module.css) instead
+// of computing an inline color string per element.
+export type StatusLevel = 'excellent' | 'good' | 'fair' | 'down' | 'noData'
+
+function getStatusLevel(percent: number | string): StatusLevel {
+  const p = Number(percent)
+  if (Number.isNaN(p)) return 'noData'
+  if (p >= 99.9) return 'excellent'
+  if (p >= 99) return 'good'
+  if (p >= 95) return 'fair'
+  return 'down'
 }
 
-export { getColor }
+export { getStatusLevel }

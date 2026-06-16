@@ -3,8 +3,18 @@ import { MonitorState, MonitorTarget } from '@/types/config'
 import { IconAlertCircle, IconAlertTriangle, IconCircleCheck } from '@tabler/icons-react'
 import DetailChart from './DetailChart'
 import DetailBar from './DetailBar'
-import { getColor } from '@/util/color'
+import { getStatusLevel, StatusLevel } from '@/util/color'
+import classes from '@/styles/StatusBar.module.css'
 import { maintenances } from '@/uptime.config'
+
+// StatusLevel -> uptime-percentage text-color class (see styles/StatusBar.module.css)
+const textColorClass: Record<StatusLevel, string> = {
+  excellent: classes.textExcellent,
+  good: classes.textGood,
+  fair: classes.textFair,
+  down: classes.textDown,
+  noData: classes.textNoData,
+}
 
 export default function MonitorDetail({
   monitor,
@@ -90,7 +100,12 @@ export default function MonitorDetail({
           monitorNameElement
         )}
 
-        <Text mt="sm" fw={700} style={{ display: 'inline', color: getColor(uptimePercent, true) }}>
+        <Text
+          mt="sm"
+          fw={700}
+          style={{ display: 'inline' }}
+          className={textColorClass[getStatusLevel(uptimePercent)]}
+        >
           {`Overall: ${uptimePercent}%`}
         </Text>
       </div>

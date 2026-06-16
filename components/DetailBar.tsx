@@ -1,10 +1,20 @@
 import { MonitorState, MonitorTarget } from '@/types/config'
-import { getColor } from '@/util/color'
+import { getStatusLevel, StatusLevel } from '@/util/color'
+import classes from '@/styles/StatusBar.module.css'
 import { Box, Tooltip, Modal } from '@mantine/core'
 import { useResizeObserver } from '@mantine/hooks'
 import { useState } from 'react'
 const moment = require('moment')
 require('moment-precise-range-plugin')
+
+// StatusLevel -> day-pill background class (see styles/StatusBar.module.css)
+const barColorClass: Record<StatusLevel, string> = {
+  excellent: classes.barExcellent,
+  good: classes.barGood,
+  fair: classes.barFair,
+  down: classes.barDown,
+  noData: classes.barNoData,
+}
 
 export default function DetailBar({
   monitor,
@@ -98,14 +108,7 @@ export default function DetailBar({
         }
       >
         <div
-          style={{
-            height: '20px',
-            width: '7px',
-            background: getColor(dayPercent, false),
-            borderRadius: '2px',
-            marginLeft: '1px',
-            marginRight: '1px',
-          }}
+          className={`${classes.bar} ${barColorClass[getStatusLevel(dayPercent)]}`}
           onClick={() => {
             if (dayDownTime > 0) {
               setModalTitle(
