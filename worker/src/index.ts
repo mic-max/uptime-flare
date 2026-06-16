@@ -41,7 +41,24 @@ const Worker = {
     let checkResult: Record<string, CheckResult> = {};
     const limit = pLimit(5);
     for (const monitor of workerConfig.monitors) {
-      checkQueue.push(limit(() => doMonitor(monitor, workerLocation, env)))
+      checkQueue.push(
+        limit(async () => {
+          const result = await doMonitor(monitor, workerLocation, env)
+          // Persist the latency sample as soon as the check resolves, so a sample
+          // is never lost if a later monitor's processing fails or the scheduled
+          // invocation is terminated before the incident-processing loop finishes.
+          try {
+            await insertLatency(db, result.id, {
+              loc: result.location,
+              ping: result.status.ping,
+              time: currentTimeSecond,
+            })
+          } catch (e) {
+            console.log(`Error inserting latency for ${result.id}: ${e}`)
+          }
+          return result
+        })
+      )
     }
     for (const result of await Promise.all(checkQueue)) {
       checkResult[result.id] = result
@@ -52,7 +69,7 @@ const Worker = {
       console.log(`Processing monitor result: ${monitor.name} (${monitor.id})`)
 
       let monitorStatusChanged = false
-      const { location: checkLocation, status } = checkResult[monitor.id]
+      const { status } = checkResult[monitor.id]
 
       // Update incidents
       // Create a dummy incident to store the start time of the monitoring and simplify logic,
@@ -196,12 +213,8 @@ const Worker = {
         }
       }
 
-      // append to latency data (one row per check; no cooldown, so no samples are dropped)
-      await insertLatency(db, monitor.id, {
-        loc: checkLocation,
-        ping: status.ping,
-        time: currentTimeSecond,
-      })
+      // latency sample for this tick was already persisted in the parallel check
+      // phase above; here we only handle retention/cleanup.
 
       // discard old latency data outside the retention window
       await deleteOldLatency(db, monitor.id, currentTimeSecond - LATENCY_RETENTION_SECONDS)
