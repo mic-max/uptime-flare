@@ -1,6 +1,5 @@
 import Head from 'next/head'
 
-import { Inter } from 'next/font/google'
 import { MonitorState, MonitorTarget } from '@/types/config'
 import { maintenances, pageConfig } from '@/uptime.config'
 import OverallStatus from '@/components/OverallStatus'
@@ -13,7 +12,6 @@ import type { Env } from '@/worker/src'
 import { loadMonitorState } from '@/worker/src/store'
 
 export const runtime = 'experimental-edge'
-const inter = Inter({ subsets: ['latin'] })
 
 export default function Home({
   state,
@@ -44,7 +42,7 @@ export default function Home({
         <title>{pageConfig.title}</title>
       </Head>
 
-      <main className={inter.className}>
+      <main>
         <Header />
 
         {state.lastUpdate === 0 ? (
