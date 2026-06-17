@@ -163,5 +163,3 @@ Consider setting up PurgeCSS in Next.js configuration to remove unused rules fro
 remove legacy javascript support
 
 fix show latency dropdown toggle alignment.
-
-add a padding to the bottom of page. if open the latency graphs then they are flush with bottom of browser window which it needs a bit of padding.

@@ -84,7 +84,7 @@ export default function IncidentsPage({ monitors }: { monitors: MonitorTarget[] 
         <title>{pageConfig.title}</title>
       </Head>
 
-      <main>
+      <main style={{ paddingBottom: '40px' }}>
         <Header
           style={{
             marginBottom: '40px',

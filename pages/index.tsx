@@ -44,7 +44,7 @@ export default function Home({
         <title>{pageConfig.title}</title>
       </Head>
 
-      <main>
+      <main style={{ paddingBottom: '40px' }}>
         <Header />
 
         {state.lastUpdate === 0 ? (
