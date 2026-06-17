@@ -7,7 +7,6 @@ import Header from '@/components/Header'
 import MonitorList from '@/components/MonitorList'
 import { Center, Text } from '@mantine/core'
 import MonitorDetail from '@/components/MonitorDetail'
-import Footer from '@/components/Footer'
 import type { Env } from '@/worker/src'
 import type { GetServerSidePropsContext } from 'next'
 import { loadMonitorState } from '@/worker/src/store'
@@ -60,8 +59,6 @@ export default function Home({
             <MonitorList monitors={monitors} state={state} />
           </div>
         )}
-
-        <Footer />
       </main>
     </>
   )

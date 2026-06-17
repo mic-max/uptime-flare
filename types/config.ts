@@ -5,7 +5,6 @@ export type PageConfig = {
   maintenances?: {
     upcomingColor?: string
   }
-  customFooter?: string
 }
 
 export type MaintenanceConfig = {

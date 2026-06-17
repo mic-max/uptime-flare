@@ -4,7 +4,6 @@ import { MaintenanceConfig, MonitorTarget } from '@/types/config'
 import { maintenances, pageConfig } from '@/uptime.config'
 import Header from '@/components/Header'
 import { Box, Button, Center, Container, Group, Select } from '@mantine/core'
-import Footer from '@/components/Footer'
 import { useEffect, useState } from 'react'
 import MaintenanceAlert from '@/components/MaintenanceAlert'
 import NoIncidentsAlert from '@/components/NoIncidents'
@@ -125,7 +124,6 @@ export default function IncidentsPage({ monitors }: { monitors: MonitorTarget[] 
             </Group>
           </Container>
         </Center>
-        <Footer />
       </main>
     </>
   )

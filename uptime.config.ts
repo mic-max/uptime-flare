@@ -9,7 +9,6 @@ const pageConfig: PageConfig = {
     { link: 'https://github.com/mic-max/uptime-flare', label: 'GitHub' },
     { link: 'mailto:yo@micmax.pw', label: 'Email Me', highlight: true },
   ],
-  customFooter: '',
 }
 
 const workerConfig: WorkerConfig = {
