@@ -1,6 +1,11 @@
 import { Button, Text, Tooltip } from '@mantine/core'
 import { LatencyRecord, MonitorState, MonitorTarget } from '@/types/config'
-import { IconAlertCircle, IconAlertTriangle, IconCircleCheck } from '@tabler/icons-react'
+import {
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconChevronDown,
+  IconCircleCheck,
+} from '@tabler/icons-react'
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import DetailBar from './DetailBar'
@@ -100,7 +105,7 @@ export default function MonitorDetail({
 
   // Conditionally render monitor name with or without hyperlink based on monitor.url presence
   const monitorNameElement = (
-    <Text mt="sm" fw={700} style={{ display: 'inline-flex', alignItems: 'center' }}>
+    <Text fw={700} style={{ display: 'inline-flex', alignItems: 'center' }}>
       {monitor.statusPageLink ? (
         <a
           href={monitor.statusPageLink}
@@ -119,7 +124,14 @@ export default function MonitorDetail({
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 'var(--mantine-spacing-sm)',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {monitor.tooltip ? (
             <Tooltip label={monitor.tooltip}>{monitorNameElement}</Tooltip>
@@ -127,8 +139,22 @@ export default function MonitorDetail({
             monitorNameElement
           )}
           {!monitor.hideLatencyChart && (
-            <Button variant="subtle" color="gray" size="compact-xs" onClick={toggleChart}>
-              {showChart ? 'Hide latency ▲' : 'Show latency ▼'}
+            <Button
+              variant="subtle"
+              color="gray"
+              size="compact-xs"
+              onClick={toggleChart}
+              leftSection={
+                <IconChevronDown
+                  size={14}
+                  style={{
+                    transform: showChart ? 'rotate(180deg)' : undefined,
+                    transition: 'transform 150ms ease',
+                  }}
+                />
+              }
+            >
+              Latency
             </Button>
           )}
         </div>

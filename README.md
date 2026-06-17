@@ -150,7 +150,7 @@ E.g. my cluster site gets pinged from florida, my mumble server from new jersey,
 
 - figure out why cloudflare does requests from different places from my same worker script... and why it consistently chooses the same location for each monitor. maybe i am being tricked somehow too.
 
-reuse the dropdown that is present in the monitoring groups
+
 
 move the external status links next to the associated monitors.
 
@@ -160,4 +160,3 @@ Consider setting up PurgeCSS in Next.js configuration to remove unused rules fro
 
 remove legacy javascript support
 
-fix show latency dropdown toggle alignment.
