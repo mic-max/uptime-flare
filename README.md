@@ -86,18 +86,13 @@ To contribute new features or customize your deployment furthermore, see [here](
 The GitHub Actions deploy no longer creates the D1 database on every run. Before
 the first deploy, create the database once and store its id as a secret.
 
-1. Create the database (pick one):
-   - `npx wrangler d1 create uptimeflare_d1`, then copy the printed `database_id`, **or**
-   - run `python deploy/init_d1.py` with `CLOUDFLARE_API_TOKEN` and
-     `CLOUDFLARE_ACCOUNT_ID` set — it creates the DB, prints the id, and creates the tables.
-
-   You can also find the id later under Dashboard → Workers & Pages → D1 →
-   `uptimeflare_d1`, or via `npx wrangler d1 list`.
+1. Create the database with `npx wrangler d1 create uptimeflare_d1` and copy the
+   printed `database_id` (or find it later under Dashboard → Workers & Pages → D1 →
+   `uptimeflare_d1`, or via `npx wrangler d1 list`).
 
 2. Store the id as a GitHub Actions secret so Terraform can import the existing DB:
 
    `gh secret set CLOUDFLARE_D1_ID --body "<the-database-id>"`
-   <!-- why do i need terraform? -->
 
 You don't need to create the tables manually — the worker's `ensureSchema()` runs
 `CREATE TABLE IF NOT EXISTS` on its first scheduled tick (within ~1 minute of deploy).
@@ -110,13 +105,11 @@ You don't need to create the tables manually — the worker's `ensureSchema()` r
 
 ## TODO
 replace plimit?
-replace or update npm packages
-
-remove init_d1? all it does is get a d1 ID? I could do that work externally from the deploy script?
+replace or update npm packages (e.g. @tabler/icons-react v2 -> v3)
 
 the change to insert to D1 after each monitor will result in more writes
 
-keep latency information longer than 12 hours
+write-path optimization for latency rows
 - is 6 rows being deleted and inserted on each worker invoke
 - what if instead I just update the oldest record?
 
@@ -126,27 +119,14 @@ decouple the data retention time from the visual graph time range shown.
 add some incidents
 - power outage june 16 7am to ~12pm
 
-change color.ts to some css classes
-
 hide requests from uptimeflare in cloudflare dashboards?
 
 ************ make the webpage 10kb
-
-include links to the status pages of the services that I use?
-	- https://status.obsidian.md/797317757
-	- https://www.githubstatus.com/
-	- https://cloudflarestatus.com
-
-show 24 hours of latency info?
 
 consider connecting worker to git repository and having cloudflare do the build?
 - https://dash.cloudflare.com/26ba71d2de1bd3a5c9ce1464bd265796/workers/services/view/uptimeflare_worker/production/settings
 
 can I compress the latency information that I request from the browser.
-
-add info level to console.log statements
-
-what are all the data-portal elements?
 
 open websocket from browser to load the newest data. in the cloudflare worker it can also have new latency be pushed to currently open connections somehow?
 
@@ -162,8 +142,25 @@ protobuf
 https://github.com/protobufjs/protobuf.js/
 is the savings worth including the library?
 
-will plimit start a new monitor the second that there is less than 5 or will it wait for the batch of 5 to complete, then do another batch of 5?
-
 show a bit of avg latency, p95 and p99 latency without showing the entire graph
 after I generate a historical average for these values (depends which location the worker req is sent from usually) I can set expected ranges
+alert for sustained out of range latencies
 
+fix the chart width not matching the timeframe that we have latency data for. there is like 3 hours on both sides that is showing nothing.
+
+be able to customize the latency time range?
+
+add a build step to compress all JS and HTML and CSS, simpler classnames too, etc.
+
+In each monitor render vertical segments that mark out where pings came from a certain location.
+E.g. my cluster site gets pinged from florida, my mumble server from new jersey, jellyfin from illinois
+
+- figure out why cloudflare does requests from different places from my same worker script... and why it consistently chooses the same location for each monitor. maybe i am being tricked somehow too.
+
+reuse the dropdown that is present in the monitoring groups
+
+group my monitors by self-hosted and not.
+
+move the external status links next to the associated monitors.
+
+when the page reloads every 5 minutes, it will close the dropdowns I had open. switch to a websocket that updates with new latencies every 5 minutes.

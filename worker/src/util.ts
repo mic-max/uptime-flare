@@ -136,7 +136,7 @@ async function webhookNotify(webhook: WebhookConfig, message: string) {
     return
   }
 
-  console.log(
+  console.info(
     'Sending webhook notification: ' + JSON.stringify(message) + ' to webhook ' + webhook.url
   )
   try {
@@ -176,7 +176,7 @@ async function webhookNotify(webhook: WebhookConfig, message: string) {
         throw 'Unrecognized payload type: ' + webhook.payloadType
     }
 
-    console.log(
+    console.info(
       `Webhook finalized parameters: ${method} ${url}, headers ${JSON.stringify(
         Object.fromEntries(headers.entries())
       )}, body ${JSON.stringify(body)}`
@@ -188,7 +188,7 @@ async function webhookNotify(webhook: WebhookConfig, message: string) {
         'Error calling webhook server, code: ' + resp.status + ', response: ' + (await resp.text())
       )
     } else {
-      console.log('Webhook notification sent successfully, code: ' + resp.status)
+      console.info('Webhook notification sent successfully, code: ' + resp.status)
     }
   } catch (e) {
     console.error('Error calling webhook server: ' + e)
@@ -214,7 +214,7 @@ const formatAndNotify = async (
     .flat()
 
   if (maintenanceList.includes(monitor.id)) {
-    console.log(`Skipping notification for ${monitor.name} (in maintenance)`)
+    console.info(`Skipping notification for ${monitor.name} (in maintenance)`)
     return
   }
 
@@ -229,7 +229,7 @@ const formatAndNotify = async (
     )
     await webhookNotify(workerConfig.notification.webhook, notification)
   } else {
-    console.log(`Webhook not set, skipping notification for ${monitor.name}`)
+    console.info(`Webhook not set, skipping notification for ${monitor.name}`)
   }
 }
 

@@ -1,7 +1,7 @@
 import { IncidentRecord, LatencyRecord, MonitorState } from '../../types/config'
 
 // Retention windows (seconds). Latency is kept for charts/last-value, incidents for the 90-day bar.
-export const LATENCY_RETENTION_SECONDS = 12 * 60 * 60
+export const LATENCY_RETENTION_SECONDS = 24 * 60 * 60
 export const INCIDENT_RETENTION_SECONDS = 90 * 24 * 60 * 60
 
 // Row shapes as stored in D1.
@@ -188,7 +188,7 @@ export async function getLatencySeries(
 // ---------------------------------------------------------------------------
 
 // Build the page's MonitorState from the incident table (+ a cheap MAX(ts) for
-// lastUpdate). The 12h latency series is deliberately NOT read here — it's large
+// lastUpdate). The latency series is deliberately NOT read here — it's large
 // and only needed when a user expands a specific chart, so it's fetched lazily
 // via getLatencySeries / /api/latency instead.
 export async function loadMonitorState(db: D1Database): Promise<MonitorState> {

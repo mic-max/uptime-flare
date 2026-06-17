@@ -29,7 +29,7 @@ let schemaEnsured = false
 const Worker = {
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     const workerLocation = (await getWorkerLocation()) || 'ERROR'
-    console.log(`Running scheduled event on ${workerLocation}...`)
+    console.info(`Running scheduled event on ${workerLocation}...`)
 
     const db = env.UPTIMEFLARE_D1
 
@@ -78,7 +78,7 @@ const Worker = {
 
     // Update each monitor's state based on check results
     for (const monitor of workerConfig.monitors) {
-      console.log(`Processing monitor result: ${monitor.name} (${monitor.id})`)
+      console.info(`Processing monitor result: ${monitor.name} (${monitor.id})`)
 
       let monitorStatusChanged = false
       const { status } = checkResult[monitor.id]
@@ -112,7 +112,7 @@ const Worker = {
             ) {
               await formatAndNotify(monitor, true, lastIncident.start[0], currentTimeSecond, 'OK')
             } else {
-              console.log(
+              console.info(
                 `grace period (${workerConfig.notification?.gracePeriod}m) not met, skipping webhook UP notification for ${monitor.name}`
               )
             }
@@ -150,7 +150,7 @@ const Worker = {
           ) {
             await formatAndNotify(monitor, false, currentIncident.start[0], currentTimeSecond, status.err)
           } else {
-            console.log(
+            console.info(
               `Grace period (${workerConfig.notification
                 ?.gracePeriod}m) not met or no change (currently down for ${
                 currentTimeSecond - currentIncident.start[0]
@@ -206,7 +206,7 @@ export class RemoteChecker extends DurableObject {
     monitor: MonitorTarget
   ): Promise<{ location: string; status: { ping: number; up: boolean; err: string } }> {
     const colo = (await getWorkerLocation()) as string
-    console.log(`Running remote checker (DurableObject) at ${colo}...`)
+    console.info(`Running remote checker (DurableObject) at ${colo}...`)
     const status = await getStatus(monitor)
     return {
       location: colo,

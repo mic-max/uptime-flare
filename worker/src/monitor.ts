@@ -77,7 +77,7 @@ export async function getStatus(
       await withTimeout(monitor.timeout || DEFAULT_TIMEOUT_MS, socket.opened)
       await socket.close()
 
-      console.log(`${monitor.name} connected to ${monitor.target}`)
+      console.info(`${monitor.name} connected to ${monitor.target}`)
 
       status.ping = Date.now() - startTime
       status.up = true
@@ -109,7 +109,7 @@ export async function getStatus(
         },
       })
 
-      console.log(`${monitor.name} responded with ${response.status}`)
+      console.info(`${monitor.name} responded with ${response.status}`)
       status.ping = Date.now() - startTime
 
       const err = await httpResponseBasicCheck(monitor, response.status, response.text.bind(response))
@@ -145,7 +145,7 @@ export async function doMonitor(monitor: MonitorTarget, defaultLocation: string,
   if (monitor.checkProxy?.startsWith('worker://')) {
     // Geo-specific check: run getStatus inside a Durable Object pinned to a region.
     try {
-      console.log(`[${monitor.id}] Calling check proxy: ${monitor.checkProxy}`)
+      console.info(`[${monitor.id}] Calling check proxy: ${monitor.checkProxy}`)
       const doLoc = monitor.checkProxy.replace('worker://', '')
       const doId = env.REMOTE_CHECKER_DO.idFromName(monitor.id)
       const doStub = env.REMOTE_CHECKER_DO.get(doId, {
@@ -165,7 +165,7 @@ export async function doMonitor(monitor: MonitorTarget, defaultLocation: string,
     status = await getStatus(monitor)
   }
 
-  console.log(
+  console.info(
     `[${monitor.id}] Check result from ${checkLocation}: up=${status.up}, ping=${status.ping}, err=${status.err}`
   )
 
