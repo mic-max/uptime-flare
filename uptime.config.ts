@@ -94,6 +94,19 @@ const workerConfig: WorkerConfig = {
         'User-Agent': 'Uptimeflare',
       },
     },
+    {
+      id: 'uptimeflare',
+      name: 'UptimeFlare',
+      method: 'GET',
+      target: 'https://status.micmax.pw',
+      checkProxy: 'worker://enam',
+      hideLatencyChart: false,
+      expectedCodes: [200],
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'Uptimeflare',
+      },
+    },
   ],
   notification: {
     webhook: {
