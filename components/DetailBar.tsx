@@ -100,6 +100,11 @@ export default function DetailBar({
     const dateStr = new Date(dayStart * 1000).toLocaleDateString()
     const isNoData = Number.isNaN(Number(dayPercent))
 
+    // A day with any downtime at all is never "excellent" — even one small
+    // incident downgrades it to "good" (uses real downtime, not the rounded %).
+    let level = getStatusLevel(dayPercent)
+    if (level === 'excellent' && dayDownTime > 0) level = 'good'
+
     // Native title tooltip (no per-pill Mantine Tooltip component -> far less main-thread work).
     const title = isNoData
       ? 'No Data'
@@ -125,7 +130,7 @@ export default function DetailBar({
     uptimePercentBars.push(
       <div
         key={i}
-        className={`${classes.bar} ${barColorClass[getStatusLevel(dayPercent)]}`}
+        className={`${classes.bar} ${barColorClass[level]}`}
         title={title}
         onClick={onClick}
         style={onClick ? { cursor: 'pointer' } : undefined}

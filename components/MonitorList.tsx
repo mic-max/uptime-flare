@@ -3,6 +3,7 @@ import { Accordion, Card, Center, Text } from '@mantine/core'
 import MonitorDetail from './MonitorDetail'
 import { pageConfig } from '@/uptime.config'
 import { useEffect, useState } from 'react'
+import classes from '@/styles/StatusBar.module.css'
 
 function countDownCount(state: MonitorState, ids: string[]) {
   let downCount = 0
@@ -18,15 +19,13 @@ function countDownCount(state: MonitorState, ids: string[]) {
   return downCount
 }
 
-function getStatusTextColor(state: MonitorState, ids: string[]) {
-  let downCount = countDownCount(state, ids)
-  if (downCount === 0) {
-    return '#059669'
-  } else if (downCount === ids.length) {
-    return '#df484a'
-  } else {
-    return '#f29030'
-  }
+// Group status color: all up -> excellent, all down -> down, otherwise partial.
+// Reuses the shared text-color classes so every status color lives in one CSS file.
+function getStatusTextClass(state: MonitorState, ids: string[]) {
+  const downCount = countDownCount(state, ids)
+  if (downCount === 0) return classes.textExcellent
+  if (downCount === ids.length) return classes.textDown
+  return classes.textFair
 }
 
 export default function MonitorList({
@@ -74,10 +73,10 @@ export default function MonitorList({
                 <div>{groupName}</div>
                 <Text
                   fw={500}
+                  className={getStatusTextClass(state, group[groupName])}
                   style={{
                     display: 'inline',
                     paddingRight: '5px',
-                    color: getStatusTextColor(state, group[groupName]),
                   }}
                 >
                   {group[groupName].length - countDownCount(state, group[groupName])}/
