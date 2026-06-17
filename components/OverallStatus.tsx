@@ -88,7 +88,7 @@ export default function OverallStatus({
       <Title mt="sm" style={{ textAlign: 'center' }} order={1}>
         {statusString}
       </Title>
-      <Title mt="sm" style={{ textAlign: 'center', color: '#70778c' }} order={5}>
+      <Title mt="sm" style={{ textAlign: 'center', color: '#70778c' }} order={2}>
         {`Last updated on: ${new Date(state.lastUpdate * 1000).toLocaleString()} (${
           currentTime - state.lastUpdate
         } sec ago)`}
@@ -97,7 +97,7 @@ export default function OverallStatus({
       {/* Upcoming Maintenance */}
       {upcomingMaintenances.length > 0 && (
         <>
-          <Title mt="4px" style={{ textAlign: 'center', color: '#70778c' }} order={5}>
+          <Title mt="4px" style={{ textAlign: 'center', color: '#70778c' }} order={2}>
             {`${upcomingMaintenances.length} upcoming maintenance${
               upcomingMaintenances.length === 1 ? '' : 's'
             }`}{' '}
