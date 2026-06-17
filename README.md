@@ -97,6 +97,7 @@ the first deploy, create the database once and store its id as a secret.
 2. Store the id as a GitHub Actions secret so Terraform can import the existing DB:
 
    `gh secret set CLOUDFLARE_D1_ID --body "<the-database-id>"`
+   <!-- why do i need terraform? -->
 
 You don't need to create the tables manually — the worker's `ensureSchema()` runs
 `CREATE TABLE IF NOT EXISTS` on its first scheduled tick (within ~1 minute of deploy).
@@ -105,3 +106,59 @@ You don't need to create the tables manually — the worker's `ensureSchema()` r
 `cd worker`
 `npx wrangler secret put PUSHOVER_TOKEN --name uptimeflare_worker`
 `npx wrangler secret put PUSHOVER_USER_KEY --name uptimeflare_worker`
+
+
+## TODO
+replace plimit?
+replace or update npm packages
+
+remove init_d1? all it does is get a d1 ID? I could do that work externally from the deploy script?
+
+the change to insert to D1 after each monitor will result in more writes
+
+keep latency information longer than 12 hours
+- is 6 rows being deleted and inserted on each worker invoke
+- what if instead I just update the oldest record?
+
+decouple the data retention time from the visual graph time range shown.
+
+add some incidents
+- power outage june 16 7am to ~12pm
+
+change color.ts to some css classes
+
+hide requests from uptimeflare in cloudflare dashboards?
+
+************ make the webpage 10kb
+
+include links to the status pages of the services that I use?
+	- https://status.obsidian.md/797317757
+	- https://www.githubstatus.com/
+	- https://cloudflarestatus.com
+
+show 24 hours of latency info?
+
+consider connecting worker to git repository and having cloudflare do the build?
+- https://dash.cloudflare.com/26ba71d2de1bd3a5c9ce1464bd265796/workers/services/view/uptimeflare_worker/production/settings
+
+can I compress the latency information that I request from the browser.
+
+add info level to console.log statements
+
+what are all the data-portal elements?
+
+open websocket from browser to load the newest data. in the cloudflare worker it can also have new latency be pushed to currently open connections somehow?
+
+have the entire website be loaded and generated client side. 
+
+get away from next.js since it is so bloated for the purposes of this website.
+
+compact the data for the webpage
+- incidents
+- latencies
+
+protobuf
+https://github.com/protobufjs/protobuf.js/
+is the savings worth including the library?
+
+will plimit start a new monitor the second that there is less than 5 or will it wait for the batch of 5 to complete, then do another batch of 5?
