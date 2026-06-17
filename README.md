@@ -152,8 +152,6 @@ E.g. my cluster site gets pinged from florida, my mumble server from new jersey,
 
 reuse the dropdown that is present in the monitoring groups
 
-group my monitors by self-hosted and not.
-
 move the external status links next to the associated monitors.
 
 when the page reloads every 5 minutes, it will close the dropdowns I had open. switch to a websocket that updates with new latencies every 5 minutes.

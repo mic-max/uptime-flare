@@ -12,6 +12,10 @@ const pageConfig: PageConfig = {
     { link: 'https://www.githubstatus.com', label: 'GitHub Status' },
     { link: 'https://new.cloudflarestatus.com/services', label: 'Cloudflare Status' },
   ],
+  group: {
+    '☁️ Cloud': ['micmax_pw_blog', 'maxwellmade_site', 'uptimeflare'],
+    '🐝 Self-Hosted': ['cluster_test_site', 'mumble_server', 'minecraft_server', 'jellyfin_server'],
+  },
 }
 
 const workerConfig: WorkerConfig = {
