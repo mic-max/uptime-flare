@@ -1,8 +1,7 @@
 import { MonitorState, MonitorTarget } from '@/types/config'
 import { getStatusLevel, StatusLevel } from '@/util/color'
 import classes from '@/styles/StatusBar.module.css'
-import { Box, Tooltip, Modal } from '@mantine/core'
-import { useResizeObserver } from '@mantine/hooks'
+import { Box, Modal } from '@mantine/core'
 import { useState } from 'react'
 
 // Human-readable duration like "2 hours 30 minutes" (replaces moment.preciseDiff).
@@ -41,7 +40,6 @@ export default function DetailBar({
   monitor: MonitorTarget
   state: MonitorState
 }) {
-  const [barRef, barRect] = useResizeObserver()
   const [modalOpened, setModalOpened] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
   const [modelContent, setModelContent] = useState(<div />)
@@ -76,10 +74,10 @@ export default function DetailBar({
 
       // Incident history for the day
       if (overlap > 0) {
-        for (let i = 0; i < incident.error.length; i++) {
-          let partStart = incident.start[i]
+        for (let j = 0; j < incident.error.length; j++) {
+          let partStart = incident.start[j]
           let partEnd =
-            i === incident.error.length - 1 ? incident.end ?? currentTime : incident.start[i + 1]
+            j === incident.error.length - 1 ? incident.end ?? currentTime : incident.start[j + 1]
           partStart = Math.max(partStart, dayStart)
           partEnd = Math.min(partEnd, dayEnd)
 
@@ -92,55 +90,46 @@ export default function DetailBar({
               hour: '2-digit',
               minute: '2-digit',
             })
-            incidentReasons.push(`[${startStr}-${endStr}] ${incident.error[i]}`)
+            incidentReasons.push(`[${startStr}-${endStr}] ${incident.error[j]}`)
           }
         }
       }
     }
 
     const dayPercent = (((dayMonitorTime - dayDownTime) / dayMonitorTime) * 100).toPrecision(4)
+    const dateStr = new Date(dayStart * 1000).toLocaleDateString()
+    const isNoData = Number.isNaN(Number(dayPercent))
+
+    // Native title tooltip (no per-pill Mantine Tooltip component -> far less main-thread work).
+    const title = isNoData
+      ? 'No Data'
+      : `${dayPercent}% at ${dateStr}` +
+        (dayDownTime > 0 ? `\nDown for ${humanizeDuration(dayDownTime)} (click for detail)` : '')
+
+    // Only attach a click handler to days that actually had downtime.
+    const onClick =
+      dayDownTime > 0
+        ? () => {
+            setModalTitle(`🚨 ${monitor.name} incidents at ${dateStr}`)
+            setModelContent(
+              <>
+                {incidentReasons.map((reason, index) => (
+                  <div key={index}>{reason}</div>
+                ))}
+              </>
+            )
+            setModalOpened(true)
+          }
+        : undefined
 
     uptimePercentBars.push(
-      <Tooltip
-        multiline
+      <div
         key={i}
-        events={{ hover: true, focus: false, touch: true }}
-        label={
-          Number.isNaN(Number(dayPercent)) ? (
-            'No Data'
-          ) : (
-            <>
-              <div>
-                {`${dayPercent}% at ${new Date(dayStart * 1000).toLocaleDateString()}`}
-              </div>
-              {dayDownTime > 0 && (
-                <div>{`Down for ${humanizeDuration(dayDownTime)} (click for detail)`}</div>
-              )}
-            </>
-          )
-        }
-      >
-        <div
-          className={`${classes.bar} ${barColorClass[getStatusLevel(dayPercent)]}`}
-          onClick={() => {
-            if (dayDownTime > 0) {
-              setModalTitle(
-                `🚨 ${monitor.name} incidents at ${new Date(
-                  dayStart * 1000
-                ).toLocaleDateString()}`
-              )
-              setModelContent(
-                <>
-                  {incidentReasons.map((reason, index) => (
-                    <div key={index}>{reason}</div>
-                  ))}
-                </>
-              )
-              setModalOpened(true)
-            }
-          }}
-        />
-      </Tooltip>
+        className={`${classes.bar} ${barColorClass[getStatusLevel(dayPercent)]}`}
+        title={title}
+        onClick={onClick}
+        style={onClick ? { cursor: 'pointer' } : undefined}
+      />
     )
   }
 
@@ -154,17 +143,22 @@ export default function DetailBar({
       >
         {modelContent}
       </Modal>
+      {/* Fixed height + overflow keeps the row from shifting layout as it renders;
+          all 90 bars are shown immediately, oldest clipping off the left on narrow
+          screens (newest stay visible via flex-end). */}
       <Box
         style={{
           display: 'flex',
           flexWrap: 'nowrap',
+          justifyContent: 'flex-end',
+          overflow: 'hidden',
+          height: '20px',
           marginTop: '10px',
           marginBottom: '5px',
         }}
         visibleFrom="540"
-        ref={barRef}
       >
-        {uptimePercentBars.slice(Math.floor(Math.max(9 * 90 - barRect.width, 0) / 9), 90)}
+        {uptimePercentBars}
       </Box>
     </>
   )
