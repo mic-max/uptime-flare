@@ -79,6 +79,7 @@ export async function getServerSideProps({ res }: GetServerSidePropsContext) {
     name: monitor.name,
     tooltip: monitor.tooltip,
     statusPageLink: monitor.statusPageLink,
+    statusDependency: monitor.statusDependency,
     hideLatencyChart: monitor.hideLatencyChart,
   }))
 

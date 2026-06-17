@@ -150,10 +150,6 @@ E.g. my cluster site gets pinged from florida, my mumble server from new jersey,
 
 - figure out why cloudflare does requests from different places from my same worker script... and why it consistently chooses the same location for each monitor. maybe i am being tricked somehow too.
 
-
-
-move the external status links next to the associated monitors.
-
 when the page reloads every 5 minutes, it will close the dropdowns I had open. switch to a websocket that updates with new latencies every 5 minutes.
 
 remove legacy javascript support

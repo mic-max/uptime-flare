@@ -8,9 +8,6 @@ const pageConfig: PageConfig = {
   links: [
     { link: 'https://github.com/mic-max/uptime-flare', label: 'GitHub' },
     { link: 'mailto:yo@micmax.pw', label: 'Email Me', highlight: true },
-    { link: 'https://status.obsidian.md/797317757', label: 'Obsidian Status' },
-    { link: 'https://www.githubstatus.com', label: 'GitHub Status' },
-    { link: 'https://new.cloudflarestatus.com/services', label: 'Cloudflare Status' },
   ],
   group: {
     '☁️ Cloud': ['micmax_pw_blog', 'maxwellmade_site', 'uptimeflare'],
@@ -26,6 +23,7 @@ const workerConfig: WorkerConfig = {
       method: 'GET',
       target: 'https://micmax.pw',
       statusPageLink: 'https://micmax.pw',
+      statusDependency: { label: 'Obsidian Status', link: 'https://status.obsidian.md/797317757' },
       checkProxy: 'worker://enam',
       hideLatencyChart: false,
       expectedCodes: [200],
@@ -41,6 +39,7 @@ const workerConfig: WorkerConfig = {
       target: 'https://maxwellmade.ca',
       checkProxy: 'worker://enam',
       statusPageLink: 'https://maxwellmade.ca',
+      statusDependency: { label: 'GitHub Status', link: 'https://www.githubstatus.com' },
       hideLatencyChart: false,
       expectedCodes: [200],
       timeout: 5000,
@@ -106,6 +105,10 @@ const workerConfig: WorkerConfig = {
       name: 'UptimeFlare',
       method: 'GET',
       target: 'https://status.micmax.pw',
+      statusDependency: {
+        label: 'Cloudflare Status',
+        link: 'https://new.cloudflarestatus.com/services',
+      },
       checkProxy: 'worker://enam',
       hideLatencyChart: false,
       expectedCodes: [200],

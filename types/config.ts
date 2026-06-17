@@ -31,6 +31,8 @@ export type MonitorTarget = {
   target: string
   tooltip?: string
   statusPageLink?: string
+  // Upstream provider this monitor depends on; rendered as a link next to the monitor.
+  statusDependency?: { label: string; link: string }
   hideLatencyChart?: boolean
   expectedCodes?: number[]
   timeout?: number

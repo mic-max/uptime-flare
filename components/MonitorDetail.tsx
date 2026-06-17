@@ -138,6 +138,18 @@ export default function MonitorDetail({
           ) : (
             monitorNameElement
           )}
+          {monitor.statusDependency && (
+            <Text
+              component="a"
+              href={monitor.statusDependency.link}
+              target="_blank"
+              size="xs"
+              c="dimmed"
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              {monitor.statusDependency.label} ↗
+            </Text>
+          )}
           {!monitor.hideLatencyChart && (
             <Button
               variant="subtle"
