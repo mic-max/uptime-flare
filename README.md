@@ -156,7 +156,4 @@ move the external status links next to the associated monitors.
 
 when the page reloads every 5 minutes, it will close the dropdowns I had open. switch to a websocket that updates with new latencies every 5 minutes.
 
-Consider setting up PurgeCSS in Next.js configuration to remove unused rules from stylesheets
-
 remove legacy javascript support
-
