@@ -2,6 +2,10 @@
   "name": "uptimeflare",
   "version": "0.1.0",
   "private": true,
+  "browserslist": [
+    "last 2 years",
+    "not dead"
+  ],
   "scripts": {
     "dev": "next dev",
     "preview": "npx @cloudflare/next-on-pages && wrangler pages dev .vercel/output/static",

@@ -1,0 +1,10 @@
+# Cloudflare Pages headers. Hashed Next.js build assets never change, so cache
+# them forever; cache the static images for a day.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/logo.svg
+  Cache-Control: public, max-age=86400
+
+/favicon.png
+  Cache-Control: public, max-age=86400
