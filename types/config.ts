@@ -75,12 +75,12 @@ export type LatencyRecord = {
   time: number
 }
 
-// The MonitorState is now assembled directly from the normalized `incident` and
-// `latency` D1 tables (see worker/src/store.ts:loadMonitorState).
+// Lightweight page state: incidents (for status + 90-day bars) plus overall
+// counts and last-update. The 12h latency series is NOT included here — it's
+// fetched per monitor on demand via /api/latency only when a chart is expanded.
 export type MonitorState = {
   lastUpdate: number
   overallUp: number
   overallDown: number
   incident: Record<string, IncidentRecord[]>
-  latency: Record<string, LatencyRecord[]> // recent 12 hour data, N min interval
 }

@@ -9,7 +9,7 @@ import {
   Tooltip as ChartTooltip,
   Legend,
 } from 'chart.js'
-import { MonitorState, MonitorTarget } from '@/types/config'
+import { LatencyRecord } from '@/types/config'
 import { codeToCountry } from '@/util/iata'
 
 ChartJS.register(
@@ -25,14 +25,8 @@ ChartJS.register(
 const formatTime = (ms: number) =>
   new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-export default function DetailChart({
-  monitor,
-  state,
-}: {
-  monitor: MonitorTarget
-  state: MonitorState
-}) {
-  const latencyData = state.latency[monitor.id].map((point) => ({
+export default function DetailChart({ data: series }: { data: LatencyRecord[] }) {
+  const latencyData = series.map((point) => ({
     x: point.time * 1000,
     y: point.ping,
     loc: point.loc,

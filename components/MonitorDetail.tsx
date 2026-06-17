@@ -1,15 +1,19 @@
-import { Text, Tooltip } from '@mantine/core'
-import { MonitorState, MonitorTarget } from '@/types/config'
+import { Button, Text, Tooltip } from '@mantine/core'
+import { LatencyRecord, MonitorState, MonitorTarget } from '@/types/config'
 import { IconAlertCircle, IconAlertTriangle, IconCircleCheck } from '@tabler/icons-react'
+import { useState } from 'react'
 import dynamic from 'next/dynamic'
-
-// Code-split Chart.js into its own chunk loaded after first paint (the whole app
-// is client-only anyway, so ssr: false costs nothing here).
-const DetailChart = dynamic(() => import('./DetailChart'), { ssr: false })
 import DetailBar from './DetailBar'
 import { getStatusLevel, StatusLevel } from '@/util/color'
 import classes from '@/styles/StatusBar.module.css'
 import { maintenances } from '@/uptime.config'
+
+// Code-split Chart.js into its own chunk, only loaded once a user expands a chart.
+// The loading placeholder reserves the chart's exact height to avoid layout shift.
+const DetailChart = dynamic(() => import('./DetailChart'), {
+  ssr: false,
+  loading: () => <div style={{ height: '150px' }} />,
+})
 
 // StatusLevel -> uptime-percentage text-color class (see styles/StatusBar.module.css)
 const textColorClass: Record<StatusLevel, string> = {
@@ -27,7 +31,24 @@ export default function MonitorDetail({
   monitor: MonitorTarget
   state: MonitorState
 }) {
-  if (!state.latency[monitor.id])
+  // Latency is fetched on demand (only when the chart is expanded), not at page load.
+  const [showChart, setShowChart] = useState(false)
+  const [latency, setLatency] = useState<LatencyRecord[] | null>(null)
+
+  const toggleChart = async () => {
+    const next = !showChart
+    setShowChart(next)
+    if (next && latency === null) {
+      try {
+        const res = await fetch(`/api/latency?id=${encodeURIComponent(monitor.id)}`)
+        setLatency(res.ok ? await res.json() : [])
+      } catch {
+        setLatency([])
+      }
+    }
+  }
+
+  if (!state.incident[monitor.id])
     return (
       <>
         <Text mt="sm" fw={700}>
@@ -115,7 +136,24 @@ export default function MonitorDetail({
       </div>
 
       <DetailBar monitor={monitor} state={state} />
-      {!monitor.hideLatencyChart && <DetailChart monitor={monitor} state={state} />}
+
+      {!monitor.hideLatencyChart && (
+        <div>
+          <Button variant="subtle" color="gray" size="compact-xs" onClick={toggleChart}>
+            {showChart ? 'Hide latency ▲' : 'Show latency ▼'}
+          </Button>
+          {showChart &&
+            (latency === null ? (
+              <div style={{ height: '150px' }} />
+            ) : latency.length > 0 ? (
+              <DetailChart data={latency} />
+            ) : (
+              <Text size="sm" c="dimmed">
+                No latency data in the retention window.
+              </Text>
+            ))}
+        </div>
+      )}
     </>
   )
 }

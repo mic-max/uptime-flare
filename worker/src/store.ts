@@ -170,20 +170,33 @@ export async function getLastUpdate(db: D1Database): Promise<number> {
   return row?.ts ?? 0
 }
 
+// Full latency series (within the retention window) for one monitor. Fetched on
+// demand by /api/latency when a chart is expanded, not as part of the page load.
+export async function getLatencySeries(
+  db: D1Database,
+  monitorId: string
+): Promise<LatencyRecord[]> {
+  const rows = await db
+    .prepare(`SELECT ts, ping, loc FROM latency WHERE monitor_id = ? ORDER BY ts`)
+    .bind(monitorId)
+    .all<LatencyRow>()
+  return rows.results.map((r) => ({ time: r.ts, ping: r.ping, loc: r.loc }))
+}
+
 // ---------------------------------------------------------------------------
-// Full-state read (used by the status page to build the MonitorState the UI expects)
+// Page state read (used by the status page)
 // ---------------------------------------------------------------------------
 
-// Reconstruct the full MonitorState from the relational tables in a single pass.
-// Retention already bounds the tables (12h latency / 90d incidents), so this reads
-// only the live window, not unbounded history.
+// Build the page's MonitorState from the incident table (+ a cheap MAX(ts) for
+// lastUpdate). The 12h latency series is deliberately NOT read here — it's large
+// and only needed when a user expands a specific chart, so it's fetched lazily
+// via getLatencySeries / /api/latency instead.
 export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
   const state: MonitorState = {
     lastUpdate: 0,
     overallUp: 0,
     overallDown: 0,
     incident: {},
-    latency: {},
   }
 
   const incidents = await db
@@ -200,14 +213,6 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
     })
   }
 
-  const latencies = await db
-    .prepare(`SELECT monitor_id, ts, ping, loc FROM latency ORDER BY monitor_id, ts`)
-    .all<{ monitor_id: string; ts: number; ping: number; loc: string }>()
-  for (const row of latencies.results) {
-    ;(state.latency[row.monitor_id] ??= []).push({ time: row.ts, ping: row.ping, loc: row.loc })
-    if (row.ts > state.lastUpdate) state.lastUpdate = row.ts
-  }
-
   // A monitor is currently up iff its most recent incident is closed.
   for (const monitorId of Object.keys(state.incident)) {
     const arr = state.incident[monitorId]
@@ -215,5 +220,6 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
     else state.overallUp++
   }
 
+  state.lastUpdate = await getLastUpdate(db)
   return state
 }
