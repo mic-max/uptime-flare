@@ -25,14 +25,15 @@ export default function Header({ style }: { style?: React.CSSProperties }) {
     <header className={classes.header} style={style}>
       <Container size="md" className={classes.inner}>
         <div>
-          <Link href="/">
-            <Image
-              src="/logo.svg"
-              h={56}
-              w={{ base: 140, sm: 190 }}
-              fit="contain"
-              alt="logo"
-            />
+          <Link
+            href="/"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+          >
+            <Image src="/favicon.png" h={32} w={32} fit="contain" alt="" />
+            <span style={{ fontSize: 22, fontWeight: 700, lineHeight: 1 }}>
+              <span style={{ color: '#059669' }}>Uptime</span>
+              <span style={{ color: '#f29030' }}>flare</span>
+            </span>
           </Link>
         </div>
 
