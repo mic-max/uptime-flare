@@ -105,16 +105,12 @@ You don't need to create the tables manually — the worker's `ensureSchema()` r
 
 ## TODO
 replace plimit?
-replace or update npm packages (e.g. @tabler/icons-react v2 -> v3)
 
 the change to insert to D1 after each monitor will result in more writes
 
 write-path optimization for latency rows
 - is 6 rows being deleted and inserted on each worker invoke
 - what if instead I just update the oldest record?
-
-decouple the data retention time from the visual graph time range shown.
-- how many hours of latency data can i comfortable store in D1 free mode
 
 add some incidents
 - power outage june 16 7am to ~12pm
@@ -142,13 +138,10 @@ protobuf
 https://github.com/protobufjs/protobuf.js/
 is the savings worth including the library?
 
-show a bit of avg latency, p95 and p99 latency without showing the entire graph
-after I generate a historical average for these values (depends which location the worker req is sent from usually) I can set expected ranges
-alert for sustained out of range latencies
+generate historical latency baselines (per worker location), set expected ranges, and alert on sustained out-of-range latencies
+- (avg / p95 / p99 are now shown per monitor over the display window)
 
-fix the chart width not matching the timeframe that we have latency data for. there is like 3 hours on both sides that is showing nothing.
-
-be able to customize the latency time range?
+add a user-facing latency time-range selector (backend already supports /api/latency?hours=)
 
 add a build step to compress all JS and HTML and CSS, simpler classnames too, etc.
 
@@ -164,3 +157,11 @@ group my monitors by self-hosted and not.
 move the external status links next to the associated monitors.
 
 when the page reloads every 5 minutes, it will close the dropdowns I had open. switch to a websocket that updates with new latencies every 5 minutes.
+
+Consider setting up PurgeCSS in Next.js configuration to remove unused rules from stylesheets
+
+remove legacy javascript support
+
+fix show latency dropdown toggle alignment.
+
+add a padding to the bottom of page. if open the latency graphs then they are flush with bottom of browser window which it needs a bit of padding.

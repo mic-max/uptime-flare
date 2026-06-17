@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import type { Env } from '@/worker/src'
-import { getLatencySeries } from '@/worker/src/store'
+import { getLatencySeries, LATENCY_DISPLAY_SECONDS } from '@/worker/src/store'
 
 export const runtime = 'edge'
 
@@ -18,7 +18,12 @@ export default async function handler(req: NextRequest): Promise<Response> {
     return new Response(JSON.stringify({ error: 'missing id' }), { status: 400, headers })
   }
 
+  // Optional ?hours= override; defaults to the configured display window.
+  const hoursParam = Number(new URL(req.url).searchParams.get('hours'))
+  const windowSeconds = hoursParam > 0 ? hoursParam * 3600 : LATENCY_DISPLAY_SECONDS
+  const since = Math.round(Date.now() / 1000) - windowSeconds
+
   const db = (process.env as any as Env).UPTIMEFLARE_D1
-  const series = await getLatencySeries(db, id)
+  const series = await getLatencySeries(db, id, since)
   return new Response(JSON.stringify(series), { headers })
 }

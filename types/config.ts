@@ -75,12 +75,20 @@ export type LatencyRecord = {
   time: number
 }
 
-// Lightweight page state: incidents (for status + 90-day bars) plus overall
-// counts and last-update. The latency series is NOT included here — it's
-// fetched per monitor on demand via /api/latency only when a chart is expanded.
+export type LatencyStats = {
+  avg: number
+  p95: number
+  p99: number
+}
+
+// Lightweight page state: incidents (for status + 90-day bars), overall counts,
+// last-update, and per-monitor latency stats over the display window. The full
+// latency series is NOT included — it's fetched per monitor on demand via
+// /api/latency only when a chart is expanded.
 export type MonitorState = {
   lastUpdate: number
   overallUp: number
   overallDown: number
   incident: Record<string, IncidentRecord[]>
+  stats: Record<string, LatencyStats>
 }

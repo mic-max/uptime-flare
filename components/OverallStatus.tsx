@@ -109,7 +109,7 @@ export default function OverallStatus({
             </span>
           </Title>
 
-          <Collapse in={expandUpcoming}>
+          <Collapse expanded={expandUpcoming}>
             {upcomingMaintenances.map((maintenance, idx) => (
               <MaintenanceAlert
                 key={`upcoming-${idx}`}

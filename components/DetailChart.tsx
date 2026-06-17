@@ -32,6 +32,11 @@ export default function DetailChart({ data: series }: { data: LatencyRecord[] })
     loc: point.loc,
   }))
 
+  // Pin the x-axis to the actual first/last sample so the line fills the width
+  // with no empty padding on either side.
+  const xMin = latencyData.length ? latencyData[0].x : undefined
+  const xMax = latencyData.length ? latencyData[latencyData.length - 1].x : undefined
+
   let data = {
     datasets: [
       {
@@ -80,6 +85,8 @@ export default function DetailChart({ data: series }: { data: LatencyRecord[] })
       // adapter (and moment.js); ticks are formatted as time-of-day below.
       x: {
         type: 'linear' as const,
+        min: xMin,
+        max: xMax,
         ticks: {
           maxRotation: 0,
           autoSkip: true,

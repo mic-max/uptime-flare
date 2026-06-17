@@ -96,6 +96,7 @@ export default function MonitorDetail({
   }
 
   const uptimePercent = (((totalTime - downTime) / totalTime) * 100).toPrecision(4)
+  const stats = state.stats[monitor.id]
 
   // Conditionally render monitor name with or without hyperlink based on monitor.url presence
   const monitorNameElement = (
@@ -132,14 +133,20 @@ export default function MonitorDetail({
           )}
         </div>
 
-        <Text
-          mt="sm"
-          fw={700}
-          style={{ display: 'inline' }}
-          className={textColorClass[getStatusLevel(uptimePercent)]}
-        >
-          {`Overall: ${uptimePercent}%`}
-        </Text>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {stats && (
+            <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+              {`avg ${stats.avg} · p95 ${stats.p95} · p99 ${stats.p99} ms`}
+            </Text>
+          )}
+          <Text
+            fw={700}
+            style={{ display: 'inline' }}
+            className={textColorClass[getStatusLevel(uptimePercent)]}
+          >
+            {`Overall: ${uptimePercent}%`}
+          </Text>
+        </div>
       </div>
 
       <DetailBar monitor={monitor} state={state} />

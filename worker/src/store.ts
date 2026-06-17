@@ -1,8 +1,23 @@
-import { IncidentRecord, LatencyRecord, MonitorState } from '../../types/config'
+import { IncidentRecord, LatencyRecord, LatencyStats, MonitorState } from '../../types/config'
 
 // Retention windows (seconds). Latency is kept for charts/last-value, incidents for the 90-day bar.
 export const LATENCY_RETENTION_SECONDS = 24 * 60 * 60
 export const INCIDENT_RETENTION_SECONDS = 90 * 24 * 60 * 60
+
+// How much of the (24h-retained) latency to actually surface in charts/stats.
+// Decoupled from retention so we can store more than we display.
+export const LATENCY_DISPLAY_SECONDS = 6 * 60 * 60
+
+// avg / p95 / p99 of a set of ping samples (SQLite has no percentile function,
+// so this is computed in JS). Includes down-samples (recorded at the timeout),
+// so percentiles reflect outage spikes as well as normal latency.
+function computeLatencyStats(pings: number[]): LatencyStats {
+  const sorted = [...pings].sort((a, b) => a - b)
+  const n = sorted.length
+  const avg = Math.round(sorted.reduce((sum, v) => sum + v, 0) / n)
+  const at = (p: number) => sorted[Math.min(n - 1, Math.ceil((p / 100) * n) - 1)]
+  return { avg, p95: at(95), p99: at(99) }
+}
 
 // Row shapes as stored in D1.
 // An "incident" row holds one logical incident. `starts`/`errors` are JSON arrays so a single
@@ -170,15 +185,16 @@ export async function getLastUpdate(db: D1Database): Promise<number> {
   return row?.ts ?? 0
 }
 
-// Full latency series (within the retention window) for one monitor. Fetched on
-// demand by /api/latency when a chart is expanded, not as part of the page load.
+// Latency series for one monitor, limited to samples at/after `sinceSeconds`.
+// Fetched on demand by /api/latency when a chart is expanded.
 export async function getLatencySeries(
   db: D1Database,
-  monitorId: string
+  monitorId: string,
+  sinceSeconds = 0
 ): Promise<LatencyRecord[]> {
   const rows = await db
-    .prepare(`SELECT ts, ping, loc FROM latency WHERE monitor_id = ? ORDER BY ts`)
-    .bind(monitorId)
+    .prepare(`SELECT ts, ping, loc FROM latency WHERE monitor_id = ? AND ts >= ? ORDER BY ts`)
+    .bind(monitorId, sinceSeconds)
     .all<LatencyRow>()
   return rows.results.map((r) => ({ time: r.ts, ping: r.ping, loc: r.loc }))
 }
@@ -197,6 +213,7 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
     overallUp: 0,
     overallDown: 0,
     incident: {},
+    stats: {},
   }
 
   const incidents = await db
@@ -221,5 +238,21 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
   }
 
   state.lastUpdate = await getLastUpdate(db)
+
+  // Per-monitor latency stats over the display window. One query (just ping
+  // values), grouped + reduced in JS. Bounded by the display window, not retention.
+  const cutoff = Math.round(Date.now() / 1000) - LATENCY_DISPLAY_SECONDS
+  const pings = await db
+    .prepare(`SELECT monitor_id, ping FROM latency WHERE ts >= ? ORDER BY monitor_id`)
+    .bind(cutoff)
+    .all<{ monitor_id: string; ping: number }>()
+  const pingsByMonitor: Record<string, number[]> = {}
+  for (const row of pings.results) {
+    ;(pingsByMonitor[row.monitor_id] ??= []).push(row.ping)
+  }
+  for (const monitorId of Object.keys(pingsByMonitor)) {
+    state.stats[monitorId] = computeLatencyStats(pingsByMonitor[monitorId])
+  }
+
   return state
 }

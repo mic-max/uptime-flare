@@ -8,9 +8,9 @@ const pageConfig: PageConfig = {
   links: [
     { link: 'https://github.com/mic-max/uptime-flare', label: 'GitHub' },
     { link: 'mailto:yo@micmax.pw', label: 'Email Me', highlight: true },
-    { link: 'https://status.obsidian.md', label: 'Obsidian Status' },
+    { link: 'https://status.obsidian.md/797317757', label: 'Obsidian Status' },
     { link: 'https://www.githubstatus.com', label: 'GitHub Status' },
-    { link: 'https://www.cloudflarestatus.com', label: 'Cloudflare Status' },
+    { link: 'https://new.cloudflarestatus.com/services', label: 'Cloudflare Status' },
   ],
 }
 
