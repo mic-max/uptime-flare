@@ -4,8 +4,26 @@ import classes from '@/styles/StatusBar.module.css'
 import { Box, Tooltip, Modal } from '@mantine/core'
 import { useResizeObserver } from '@mantine/hooks'
 import { useState } from 'react'
-const moment = require('moment')
-require('moment-precise-range-plugin')
+
+// Human-readable duration like "2 hours 30 minutes" (replaces moment.preciseDiff).
+function humanizeDuration(totalSeconds: number): string {
+  const units: [number, string][] = [
+    [86400, 'day'],
+    [3600, 'hour'],
+    [60, 'minute'],
+    [1, 'second'],
+  ]
+  let remaining = Math.round(totalSeconds)
+  const parts: string[] = []
+  for (const [size, name] of units) {
+    const value = Math.floor(remaining / size)
+    if (value > 0) {
+      parts.push(`${value} ${name}${value === 1 ? '' : 's'}`)
+      remaining -= value * size
+    }
+  }
+  return parts.length > 0 ? parts.join(' ') : '0 seconds'
+}
 
 // StatusLevel -> day-pill background class (see styles/StatusBar.module.css)
 const barColorClass: Record<StatusLevel, string> = {
@@ -96,12 +114,7 @@ export default function DetailBar({
                 {`${dayPercent}% at ${new Date(dayStart * 1000).toLocaleDateString()}`}
               </div>
               {dayDownTime > 0 && (
-                <div>
-                  {`Down for ${moment.preciseDiff(
-                    moment(0),
-                    moment(dayDownTime * 1000)
-                  )} (click for detail)`}
-                </div>
+                <div>{`Down for ${humanizeDuration(dayDownTime)} (click for detail)`}</div>
               )}
             </>
           )

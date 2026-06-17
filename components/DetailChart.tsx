@@ -8,9 +8,7 @@ import {
   Title,
   Tooltip as ChartTooltip,
   Legend,
-  TimeScale,
 } from 'chart.js'
-import 'chartjs-adapter-moment'
 import { MonitorState, MonitorTarget } from '@/types/config'
 import { codeToCountry } from '@/util/iata'
 
@@ -21,9 +19,11 @@ ChartJS.register(
   LineElement,
   Title,
   ChartTooltip,
-  Legend,
-  TimeScale
+  Legend
 )
+
+const formatTime = (ms: number) =>
+  new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
 export default function DetailChart({
   monitor,
@@ -64,6 +64,7 @@ export default function DetailChart({
     plugins: {
       tooltip: {
         callbacks: {
+          title: (items: any) => formatTime(items[0].parsed.x),
           label: (item: any) => {
             if (item.parsed.y) {
               return `${item.parsed.y}ms (${codeToCountry(item.raw.loc)})`
@@ -81,12 +82,15 @@ export default function DetailChart({
       },
     },
     scales: {
+      // Linear scale over millisecond timestamps avoids pulling in a date
+      // adapter (and moment.js); ticks are formatted as time-of-day below.
       x: {
-        type: 'time' as const,
+        type: 'linear' as const,
         ticks: {
-          source: 'auto' as const,
           maxRotation: 0,
           autoSkip: true,
+          maxTicksLimit: 8,
+          callback: (value: any) => formatTime(Number(value)),
         },
       },
     },

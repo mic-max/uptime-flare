@@ -1,7 +1,11 @@
 import { Text, Tooltip } from '@mantine/core'
 import { MonitorState, MonitorTarget } from '@/types/config'
 import { IconAlertCircle, IconAlertTriangle, IconCircleCheck } from '@tabler/icons-react'
-import DetailChart from './DetailChart'
+import dynamic from 'next/dynamic'
+
+// Code-split Chart.js into its own chunk loaded after first paint (the whole app
+// is client-only anyway, so ssr: false costs nothing here).
+const DetailChart = dynamic(() => import('./DetailChart'), { ssr: false })
 import DetailBar from './DetailBar'
 import { getStatusLevel, StatusLevel } from '@/util/color'
 import classes from '@/styles/StatusBar.module.css'
