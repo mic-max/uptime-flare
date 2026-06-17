@@ -118,12 +118,19 @@ export default function MonitorDetail({
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        {monitor.tooltip ? (
-          <Tooltip label={monitor.tooltip}>{monitorNameElement}</Tooltip>
-        ) : (
-          monitorNameElement
-        )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {monitor.tooltip ? (
+            <Tooltip label={monitor.tooltip}>{monitorNameElement}</Tooltip>
+          ) : (
+            monitorNameElement
+          )}
+          {!monitor.hideLatencyChart && (
+            <Button variant="subtle" color="gray" size="compact-xs" onClick={toggleChart}>
+              {showChart ? 'Hide latency ▲' : 'Show latency ▼'}
+            </Button>
+          )}
+        </div>
 
         <Text
           mt="sm"
@@ -137,23 +144,17 @@ export default function MonitorDetail({
 
       <DetailBar monitor={monitor} state={state} />
 
-      {!monitor.hideLatencyChart && (
-        <div>
-          <Button variant="subtle" color="gray" size="compact-xs" onClick={toggleChart}>
-            {showChart ? 'Hide latency ▲' : 'Show latency ▼'}
-          </Button>
-          {showChart &&
-            (latency === null ? (
-              <div style={{ height: '150px' }} />
-            ) : latency.length > 0 ? (
-              <DetailChart data={latency} />
-            ) : (
-              <Text size="sm" c="dimmed">
-                No latency data in the retention window.
-              </Text>
-            ))}
-        </div>
-      )}
+      {showChart &&
+        !monitor.hideLatencyChart &&
+        (latency === null ? (
+          <div style={{ height: '150px' }} />
+        ) : latency.length > 0 ? (
+          <DetailChart data={latency} />
+        ) : (
+          <Text size="sm" c="dimmed">
+            No latency data in the retention window.
+          </Text>
+        ))}
     </>
   )
 }
