@@ -121,6 +121,7 @@ keep latency information longer than 12 hours
 - what if instead I just update the oldest record?
 
 decouple the data retention time from the visual graph time range shown.
+- how many hours of latency data can i comfortable store in D1 free mode
 
 add some incidents
 - power outage june 16 7am to ~12pm
@@ -162,3 +163,7 @@ https://github.com/protobufjs/protobuf.js/
 is the savings worth including the library?
 
 will plimit start a new monitor the second that there is less than 5 or will it wait for the batch of 5 to complete, then do another batch of 5?
+
+show a bit of avg latency, p95 and p99 latency without showing the entire graph
+after I generate a historical average for these values (depends which location the worker req is sent from usually) I can set expected ranges
+

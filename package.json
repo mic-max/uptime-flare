@@ -8,7 +8,6 @@
   ],
   "scripts": {
     "dev": "next dev",
-    "preview": "npx @cloudflare/next-on-pages && wrangler pages dev .vercel/output/static",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
