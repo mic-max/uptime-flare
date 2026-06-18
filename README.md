@@ -152,4 +152,3 @@ E.g. my cluster site gets pinged from florida, my mumble server from new jersey,
 
 when the page reloads every 5 minutes, it will close the dropdowns I had open. switch to a websocket that updates with new latencies every 5 minutes.
 
-remove legacy javascript support
