@@ -152,3 +152,17 @@ E.g. my cluster site gets pinged from florida, my mumble server from new jersey,
 
 when the page reloads every 5 minutes, it will close the dropdowns I had open. switch to a websocket that updates with new latencies every 5 minutes.
 
+use or remove maintainances feature
+
+start groups open by default
+
+add a button to expand/collapse all latencies
+- remember state of dropdowns on reloads?
+
+can i include the githash on the webpage?
+
+how can i test the project locally? npm run dev doesn't work since it needs to fetch API data to populate things?
+
+add a meta description
+
+server-rendering the shell
