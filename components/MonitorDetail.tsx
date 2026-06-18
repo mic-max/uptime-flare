@@ -10,7 +10,7 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import DetailBar from './DetailBar'
 import { getStatusLevel, StatusLevel } from '@/util/color'
-import classes from '@/styles/StatusBar.module.css'
+import classes from '@/styles/app.module.css'
 import { maintenances } from '@/uptime.config'
 
 // Code-split Chart.js into its own chunk, only loaded once a user expands a chart.
@@ -20,7 +20,7 @@ const DetailChart = dynamic(() => import('./DetailChart'), {
   loading: () => <div style={{ height: '150px' }} />,
 })
 
-// StatusLevel -> uptime-percentage text-color class (see styles/StatusBar.module.css)
+// StatusLevel -> uptime-percentage text-color class (see styles/app.module.css)
 const textColorClass: Record<StatusLevel, string> = {
   excellent: classes.textExcellent,
   good: classes.textGood,

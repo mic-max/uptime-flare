@@ -1,0 +1,97 @@
+/* ---------------------------------------------------------------------------
+   Header / layout
+   --------------------------------------------------------------------------- */
+.header {
+  height: rem(56px);
+  background-color: var(--mantine-color-body);
+  border-bottom: rem(1px) solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.inner {
+  height: rem(56px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Wordmark colors, theme-aware so they stay >=4.5:1 on the light/dark header. */
+.uptime {
+  color: light-dark(#265c5f, #5eb3b8);
+}
+.flare {
+  color: light-dark(#7b4b05, #e0a64e);
+}
+
+.link {
+  display: block;
+  line-height: 1;
+  padding: rem(8px) rem(12px);
+  border-radius: var(--mantine-radius-sm);
+  text-decoration: none;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+
+  @mixin hover {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  }
+
+  [data-mantine-color-scheme] &[data-active] {
+    background-color: var(--mantine-color-blue-filled);
+    color: var(--mantine-color-white);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Status indicators — 90-day uptime bars + status text/icon colors
+   --------------------------------------------------------------------------- */
+
+/* Static geometry for the 90 day-uptime pills, shared by every pill so the
+   dimensions are declared once instead of inlined on each <div>. */
+.bar {
+  height: 20px;
+  width: 7px;
+  border-radius: 2px;
+  margin-left: 1px;
+  margin-right: 1px;
+}
+
+/* Day-pill background colors, keyed by StatusLevel (util/color.ts). */
+.barExcellent {
+  background-color: #059669;
+}
+.barGood {
+  background-color: #9deab8;
+}
+.barFair {
+  background-color: #f29030;
+}
+.barDown {
+  background-color: #df484a;
+}
+.barNoData {
+  background-color: gray;
+}
+
+/* Status text/icon colors. Theme-aware via light-dark() so each meets WCAG AA
+   (>=4.5:1 small text) against both the light (#fff) and dark (#242424) body. */
+.textExcellent {
+  color: light-dark(#047857, #34d399);
+}
+.textGood {
+  color: light-dark(#15803d, #4ade80);
+}
+.textFair {
+  color: light-dark(#b45309, #fbbf24);
+}
+.textDown {
+  color: light-dark(#b91c1c, #f87171);
+}
+.textNoData {
+  color: light-dark(#6b7280, #9ca3af);
+}
+
+/* Accessible replacement for Mantine's low-contrast c="dimmed" (fails AA on white). */
+.muted {
+  color: light-dark(#6b7280, #9ca3af);
+}

@@ -4,7 +4,7 @@ import { IconCircleCheck, IconAlertCircle, IconPlus, IconMinus } from '@tabler/i
 import { useEffect, useState } from 'react'
 import MaintenanceAlert from './MaintenanceAlert'
 import { pageConfig } from '@/uptime.config'
-import classes from '@/styles/StatusBar.module.css'
+import classes from '@/styles/app.module.css'
 
 function useWindowVisibility() {
   const [isVisible, setIsVisible] = useState(true)

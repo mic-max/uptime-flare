@@ -3,7 +3,7 @@ import { Accordion, Card, Center, Text } from '@mantine/core'
 import MonitorDetail from './MonitorDetail'
 import { pageConfig } from '@/uptime.config'
 import { useEffect, useState } from 'react'
-import classes from '@/styles/StatusBar.module.css'
+import classes from '@/styles/app.module.css'
 
 function countDownCount(state: MonitorState, ids: string[]) {
   let downCount = 0

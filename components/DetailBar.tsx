@@ -1,6 +1,6 @@
 import { MonitorState, MonitorTarget } from '@/types/config'
 import { getStatusLevel, StatusLevel } from '@/util/color'
-import classes from '@/styles/StatusBar.module.css'
+import classes from '@/styles/app.module.css'
 import { Box, Modal } from '@mantine/core'
 import { useState } from 'react'
 
@@ -24,7 +24,7 @@ function humanizeDuration(totalSeconds: number): string {
   return parts.length > 0 ? parts.join(' ') : '0 seconds'
 }
 
-// StatusLevel -> day-pill background class (see styles/StatusBar.module.css)
+// StatusLevel -> day-pill background class (see styles/app.module.css)
 const barColorClass: Record<StatusLevel, string> = {
   excellent: classes.barExcellent,
   good: classes.barGood,

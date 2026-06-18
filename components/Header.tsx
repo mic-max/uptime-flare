@@ -1,6 +1,6 @@
 import { Container, Group, Image } from '@mantine/core'
 import Link from 'next/link'
-import classes from '@/styles/Header.module.css'
+import classes from '@/styles/app.module.css'
 import { pageConfig } from '@/uptime.config'
 import { PageConfigLink } from '@/types/config'
 
