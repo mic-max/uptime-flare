@@ -35,7 +35,6 @@ jobs:
               - 'types/**'
               - 'uptime.config.ts'
               - 'deploy.tf'
-              - 'init.sql'
               - 'deploy/**'
               - '.github/workflows/deploy.yml'
             page:

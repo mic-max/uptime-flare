@@ -41,8 +41,9 @@ function rowToIncident(row: IncidentRow): { id: number; incident: IncidentRecord
 // Schema
 // ---------------------------------------------------------------------------
 
-// Idempotently ensure the relational tables exist. Runs cheaply on every scheduled
-// invocation so existing deployments self-heal without re-running init.sql.
+// Idempotently ensure the relational tables exist. This is the single source of
+// truth for the schema; it runs cheaply on cold start so deployments self-heal
+// without a separate migration step.
 export async function ensureSchema(db: D1Database): Promise<void> {
   await db.batch([
     db.prepare(
