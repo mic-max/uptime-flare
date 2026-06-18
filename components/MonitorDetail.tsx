@@ -69,11 +69,13 @@ export default function MonitorDetail({
   let statusIcon =
     state.incident[monitor.id].slice(-1)[0].end === null ? (
       <IconAlertCircle
-        style={{ width: '1.25em', height: '1.25em', color: '#b91c1c', marginRight: '3px' }}
+        className={classes.textDown}
+        style={{ width: '1.25em', height: '1.25em', marginRight: '3px' }}
       />
     ) : (
       <IconCircleCheck
-        style={{ width: '1.25em', height: '1.25em', color: '#059669', marginRight: '3px' }}
+        className={classes.textExcellent}
+        style={{ width: '1.25em', height: '1.25em', marginRight: '3px' }}
       />
     )
 
@@ -85,10 +87,10 @@ export default function MonitorDetail({
   if (hasMaintenance)
     statusIcon = (
       <IconAlertTriangle
+        className={classes.textFair}
         style={{
           width: '1.25em',
           height: '1.25em',
-          color: '#fab005',
           marginRight: '3px',
         }}
       />
@@ -144,7 +146,7 @@ export default function MonitorDetail({
               href={monitor.statusDependency.link}
               target="_blank"
               size="xs"
-              c="dimmed"
+              className={classes.muted}
               style={{ whiteSpace: 'nowrap' }}
             >
               {monitor.statusDependency.label} ↗
@@ -173,7 +175,7 @@ export default function MonitorDetail({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {stats && (
-            <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+            <Text size="xs" className={classes.muted} style={{ whiteSpace: 'nowrap' }}>
               {`avg ${stats.avg} · p95 ${stats.p95} · p99 ${stats.p99} ms`}
             </Text>
           )}
@@ -196,7 +198,7 @@ export default function MonitorDetail({
         ) : latency.length > 0 ? (
           <DetailChart data={latency} />
         ) : (
-          <Text size="sm" c="dimmed">
+          <Text size="sm" className={classes.muted}>
             No latency data in the retention window.
           </Text>
         ))}

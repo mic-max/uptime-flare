@@ -31,8 +31,8 @@ export default function Header({ style }: { style?: React.CSSProperties }) {
           >
             <Image src="/favicon.png" h={32} w={32} fit="contain" alt="" />
             <span style={{ fontSize: 22, fontWeight: 700, lineHeight: 1 }}>
-              <span style={{ color: '#41aeb1' }}>Uptime</span>
-              <span style={{ color: '#faad3f' }}>Flare</span>
+              <span className={classes.uptime}>Uptime</span>
+              <span className={classes.flare}>Flare</span>
             </span>
           </Link>
         </div>

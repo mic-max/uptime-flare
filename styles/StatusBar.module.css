@@ -25,19 +25,25 @@
   background-color: gray;
 }
 
-/* Uptime-percentage text colors (the darker variants). */
+/* Status text/icon colors. Theme-aware via light-dark() so each meets WCAG AA
+   (>=4.5:1 small text) against both the light (#fff) and dark (#242424) body. */
 .textExcellent {
-  color: #059669;
+  color: light-dark(#047857, #34d399);
 }
 .textGood {
-  color: #3bd671;
+  color: light-dark(#15803d, #4ade80);
 }
 .textFair {
-  color: #f29030;
+  color: light-dark(#b45309, #fbbf24);
 }
 .textDown {
-  color: #df484a;
+  color: light-dark(#b91c1c, #f87171);
 }
 .textNoData {
-  color: gray;
+  color: light-dark(#6b7280, #9ca3af);
+}
+
+/* Accessible replacement for Mantine's low-contrast c="dimmed" (fails AA on white). */
+.muted {
+  color: light-dark(#6b7280, #9ca3af);
 }

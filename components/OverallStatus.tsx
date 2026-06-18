@@ -4,6 +4,7 @@ import { IconCircleCheck, IconAlertCircle, IconPlus, IconMinus } from '@tabler/i
 import { useEffect, useState } from 'react'
 import MaintenanceAlert from './MaintenanceAlert'
 import { pageConfig } from '@/uptime.config'
+import classes from '@/styles/StatusBar.module.css'
 
 function useWindowVisibility() {
   const [isVisible, setIsVisible] = useState(true)
@@ -28,14 +29,14 @@ export default function OverallStatus({
   let groupedMonitor = (group && Object.keys(group).length > 0) || false
 
   let statusString = ''
-  let icon = <IconAlertCircle style={{ width: 64, height: 64, color: '#b91c1c' }} />
+  let icon = <IconAlertCircle className={classes.textDown} style={{ width: 64, height: 64 }} />
   if (state.overallUp === 0 && state.overallDown === 0) {
     statusString = 'No data yet'
   } else if (state.overallUp === 0) {
     statusString = 'All systems not operational'
   } else if (state.overallDown === 0) {
     statusString = 'All systems operational'
-    icon = <IconCircleCheck style={{ width: 64, height: 64, color: '#059669' }} />
+    icon = <IconCircleCheck className={classes.textExcellent} style={{ width: 64, height: 64 }} />
   } else {
     statusString = `Some systems not operational (${state.overallDown} out of ${
       state.overallUp + state.overallDown
@@ -88,7 +89,7 @@ export default function OverallStatus({
       <Title mt="sm" style={{ textAlign: 'center' }} order={1}>
         {statusString}
       </Title>
-      <Title mt="sm" style={{ textAlign: 'center', color: '#70778c' }} order={2}>
+      <Title mt="sm" className={classes.muted} style={{ textAlign: 'center' }} order={2}>
         {`Last updated on: ${new Date(state.lastUpdate * 1000).toLocaleString()} (${
           currentTime - state.lastUpdate
         } sec ago)`}
@@ -97,7 +98,7 @@ export default function OverallStatus({
       {/* Upcoming Maintenance */}
       {upcomingMaintenances.length > 0 && (
         <>
-          <Title mt="4px" style={{ textAlign: 'center', color: '#70778c' }} order={2}>
+          <Title mt="4px" className={classes.muted} style={{ textAlign: 'center' }} order={2}>
             {`${upcomingMaintenances.length} upcoming maintenance${
               upcomingMaintenances.length === 1 ? '' : 's'
             }`}{' '}

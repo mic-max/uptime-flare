@@ -11,6 +11,14 @@
   align-items: center;
 }
 
+/* Wordmark colors, theme-aware so they stay >=4.5:1 on the light/dark header. */
+.uptime {
+  color: light-dark(#265c5f, #5eb3b8);
+}
+.flare {
+  color: light-dark(#7b4b05, #e0a64e);
+}
+
 .link {
   display: block;
   line-height: 1;
