@@ -59,45 +59,50 @@ export default function MonitorList({
         value={expandedGroups}
         onChange={(values) => setExpandedGroups(values)}
       >
-        {Object.keys(group).map((groupName) => (
-          <Accordion.Item key={groupName} value={groupName}>
-            <Accordion.Control>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  alignItems: 'center',
-                }}
-              >
-                <div>{groupName}</div>
-                <Text
-                  fw={500}
-                  className={getStatusTextClass(state, group[groupName])}
+        {Object.keys(group).map((groupName) => {
+          const total = group[groupName].length
+          const upCount = total - countDownCount(state, group[groupName])
+          return (
+            <Accordion.Item key={groupName} value={groupName}>
+              <Accordion.Control>
+                <div
                   style={{
-                    display: 'inline',
-                    paddingRight: '5px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    alignItems: 'center',
                   }}
                 >
-                  {group[groupName].length - countDownCount(state, group[groupName])}/
-                  {group[groupName].length} Operational
-                </Text>
-              </div>
-            </Accordion.Control>
-            <Accordion.Panel>
-              {monitors
-                .filter((monitor) => group[groupName].includes(monitor.id))
-                .sort((a, b) => group[groupName].indexOf(a.id) - group[groupName].indexOf(b.id))
-                .map((monitor) => (
-                  <div key={monitor.id}>
-                    <Card.Section ml="xs" mr="xs">
-                      <MonitorDetail monitor={monitor} state={state} />
-                    </Card.Section>
-                  </div>
-                ))}
-            </Accordion.Panel>
-          </Accordion.Item>
-        ))}
+                  <div>{groupName}</div>
+                  <Text
+                    fw={500}
+                    className={getStatusTextClass(state, group[groupName])}
+                    style={{
+                      display: 'inline',
+                      paddingRight: '5px',
+                    }}
+                    role="status"
+                    aria-label={`${upCount} of ${total} operational`}
+                  >
+                    {upCount}/{total} Operational
+                  </Text>
+                </div>
+              </Accordion.Control>
+              <Accordion.Panel>
+                {monitors
+                  .filter((monitor) => group[groupName].includes(monitor.id))
+                  .sort((a, b) => group[groupName].indexOf(a.id) - group[groupName].indexOf(b.id))
+                  .map((monitor) => (
+                    <div key={monitor.id}>
+                      <Card.Section ml="xs" mr="xs">
+                        <MonitorDetail monitor={monitor} state={state} />
+                      </Card.Section>
+                    </div>
+                  ))}
+              </Accordion.Panel>
+            </Accordion.Item>
+          )
+        })}
       </Accordion>
     )
   } else {
