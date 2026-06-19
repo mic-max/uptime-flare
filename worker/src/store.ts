@@ -170,20 +170,62 @@ export async function writeLatencyBatch(
   await db.batch(statements)
 }
 
-export async function getLastLatency(
-  db: D1Database,
-  monitorId: string
-): Promise<LatencyRecord | null> {
-  const row = await db
-    .prepare(`SELECT ts, ping, loc FROM latency WHERE monitor_id = ? ORDER BY ts DESC LIMIT 1`)
-    .bind(monitorId)
-    .first<LatencyRow>()
-  return row ? { time: row.ts, ping: row.ping, loc: row.loc } : null
-}
-
 export async function getLastUpdate(db: D1Database): Promise<number> {
   const row = await db.prepare(`SELECT MAX(ts) AS ts FROM latency`).first<{ ts: number | null }>()
   return row?.ts ?? 0
+}
+
+// Snapshot for the /api/data summary: latest latency + latest incident for every
+// monitor, plus lastUpdate (= newest latency ts) — all in ONE batched round-trip
+// (two statements) instead of 1 + 2-per-monitor sequential queries.
+export async function getDataSnapshot(db: D1Database): Promise<{
+  lastUpdate: number
+  incident: Record<string, IncidentRecord>
+  latency: Record<string, LatencyRecord>
+}> {
+  const [latencyRes, incidentRes] = await db.batch([
+    // Newest latency row per monitor (id is autoincrement, so MAX(id) == latest).
+    db.prepare(
+      `SELECT monitor_id, ts, ping, loc FROM latency
+       WHERE id IN (SELECT MAX(id) FROM latency GROUP BY monitor_id)`
+    ),
+    // Newest incident row per monitor (same ordering as getLastIncident).
+    db.prepare(
+      `SELECT monitor_id, starts, end_time, errors FROM (
+         SELECT monitor_id, starts, end_time, errors,
+                ROW_NUMBER() OVER (PARTITION BY monitor_id ORDER BY start_time DESC, id DESC) AS rn
+         FROM incident
+       ) WHERE rn = 1`
+    ),
+  ])
+
+  const latency: Record<string, LatencyRecord> = {}
+  let lastUpdate = 0
+  for (const r of latencyRes.results as unknown as {
+    monitor_id: string
+    ts: number
+    ping: number
+    loc: string
+  }[]) {
+    latency[r.monitor_id] = { time: r.ts, ping: r.ping, loc: r.loc }
+    if (r.ts > lastUpdate) lastUpdate = r.ts
+  }
+
+  const incident: Record<string, IncidentRecord> = {}
+  for (const r of incidentRes.results as unknown as {
+    monitor_id: string
+    starts: string
+    end_time: number | null
+    errors: string
+  }[]) {
+    incident[r.monitor_id] = {
+      start: JSON.parse(r.starts),
+      end: r.end_time,
+      error: JSON.parse(r.errors),
+    }
+  }
+
+  return { lastUpdate, incident, latency }
 }
 
 // Latency series for one monitor, limited to samples at/after `sinceSeconds`.

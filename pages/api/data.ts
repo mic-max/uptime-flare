@@ -1,7 +1,7 @@
 import { maintenances, workerConfig } from '@/uptime.config'
 import { NextRequest } from 'next/server'
 import type { Env } from '@/worker/src'
-import { getLastIncident, getLastLatency, getLastUpdate } from '@/worker/src/store'
+import { getDataSnapshot } from '@/worker/src/store'
 
 export const runtime = 'edge'
 
@@ -16,12 +16,10 @@ export default async function handler(req: NextRequest): Promise<Response> {
   const db = (process.env as any as Env).UPTIMEFLARE_D1
   const t0 = Date.now()
 
-  const lastUpdate = await getLastUpdate(db)
+  // One batched round-trip: latest latency + latest incident per monitor.
+  const { lastUpdate, incident, latency } = await getDataSnapshot(db)
   if (lastUpdate === 0) {
-    return new Response(JSON.stringify({ error: 'No data available' }), {
-      status: 500,
-      headers,
-    })
+    return new Response(JSON.stringify({ error: 'No data available' }), { status: 500, headers })
   }
 
   let monitors: any = {}
@@ -29,19 +27,19 @@ export default async function handler(req: NextRequest): Promise<Response> {
   let overallDown = 0
 
   for (let monitor of workerConfig.monitors) {
-    const last = await getLastIncident(db, monitor.id)
-    const latency = await getLastLatency(db, monitor.id)
+    const last = incident[monitor.id]
+    const lat = latency[monitor.id]
 
-    const isUp = last !== null && last.incident.end !== null
-    if (last !== null) {
+    const isUp = last != null && last.end !== null
+    if (last != null) {
       isUp ? overallUp++ : overallDown++
     }
 
     monitors[monitor.id] = {
       up: isUp,
-      latency: latency?.ping ?? 0,
-      location: latency?.loc ?? '',
-      message: isUp ? 'OK' : last?.incident.error[last.incident.error.length - 1] ?? 'No data',
+      latency: lat?.ping ?? 0,
+      location: lat?.loc ?? '',
+      message: isUp ? 'OK' : last?.error[last.error.length - 1] ?? 'No data',
     }
   }
 
@@ -53,11 +51,8 @@ export default async function handler(req: NextRequest): Promise<Response> {
     maintenances,
   }
 
-  // Total D1 time + query count. These run sequentially (1 + 2 per monitor), so
-  // the count surfaces the N+1 pattern in the browser's Network → Timing tab.
   const dbMs = Date.now() - t0
-  const queryCount = 1 + workerConfig.monitors.length * 2
   return new Response(JSON.stringify(ret), {
-    headers: { ...headers, 'Server-Timing': `d1;dur=${dbMs};desc="${queryCount} queries"` },
+    headers: { ...headers, 'Server-Timing': `d1;dur=${dbMs};desc="2 queries, 1 round-trip"` },
   })
 }
