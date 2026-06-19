@@ -6,7 +6,7 @@ import {
   IconChevronDown,
   IconCircleCheck,
 } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import DetailBar from './DetailBar'
 import { getStatusLevel, StatusLevel } from '@/util/color'
@@ -32,26 +32,41 @@ const textColorClass: Record<StatusLevel, string> = {
 export default function MonitorDetail({
   monitor,
   state,
+  expanded,
+  onToggleChart,
 }: {
   monitor: MonitorTarget
   state: MonitorState
+  // When provided, the chart's expanded state is controlled by the parent (for
+  // "expand all" + localStorage persistence); otherwise it falls back to local.
+  expanded?: boolean
+  onToggleChart?: () => void
 }) {
-  // Latency is fetched on demand (only when the chart is expanded), not at page load.
-  const [showChart, setShowChart] = useState(false)
+  const [internalShow, setInternalShow] = useState(false)
+  const showChart = expanded ?? internalShow
   const [latency, setLatency] = useState<LatencyRecord[] | null>(null)
 
-  const toggleChart = async () => {
-    const next = !showChart
-    setShowChart(next)
-    if (next && latency === null) {
+  // Fetch the series the first time the chart becomes visible — covers a user
+  // click and an "expanded" state restored from localStorage on (re)load.
+  useEffect(() => {
+    if (!showChart || latency !== null) return
+    let cancelled = false
+    const load = async () => {
       try {
         const res = await fetch(`/api/latency?id=${encodeURIComponent(monitor.id)}`)
-        setLatency(res.ok ? await res.json() : [])
+        const data: LatencyRecord[] = res.ok ? await res.json() : []
+        if (!cancelled) setLatency(data)
       } catch {
-        setLatency([])
+        if (!cancelled) setLatency([])
       }
     }
-  }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [showChart, latency, monitor.id])
+
+  const toggleChart = () => (onToggleChart ? onToggleChart() : setInternalShow((v) => !v))
 
   if (!state.incident[monitor.id])
     return (

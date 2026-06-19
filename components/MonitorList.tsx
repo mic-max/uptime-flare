@@ -1,5 +1,6 @@
 import { MonitorState, MonitorTarget } from '@/types/config'
-import { Accordion, Card, Center, Text } from '@mantine/core'
+import { Accordion, Button, Card, Center, Text } from '@mantine/core'
+import { IconChevronDown } from '@tabler/icons-react'
 import MonitorDetail from './MonitorDetail'
 import { pageConfig } from '@/uptime.config'
 import { useEffect, useState } from 'react'
@@ -49,6 +50,22 @@ export default function MonitorList({
     localStorage.setItem('expandedGroups', JSON.stringify(expandedGroups))
   }, [expandedGroups])
 
+  // Per-monitor chart expansion, persisted across the 5-minute auto-reloads so
+  // open charts stay open. The "expand all" button drives the same state.
+  const chartableIds = monitors.filter((m) => !m.hideLatencyChart).map((m) => m.id)
+  const savedExpandedCharts = localStorage.getItem('expandedCharts')
+  const [expandedCharts, setExpandedCharts] = useState<Record<string, boolean>>(
+    savedExpandedCharts ? JSON.parse(savedExpandedCharts) : {}
+  )
+  useEffect(() => {
+    localStorage.setItem('expandedCharts', JSON.stringify(expandedCharts))
+  }, [expandedCharts])
+
+  const toggleChart = (id: string) => setExpandedCharts((prev) => ({ ...prev, [id]: !prev[id] }))
+  const allChartsExpanded = chartableIds.length > 0 && chartableIds.every((id) => expandedCharts[id])
+  const toggleAllCharts = () =>
+    setExpandedCharts(Object.fromEntries(chartableIds.map((id) => [id, !allChartsExpanded])))
+
   if (groupedMonitor) {
     // Grouped monitors
     content = (
@@ -95,7 +112,12 @@ export default function MonitorList({
                   .map((monitor) => (
                     <div key={monitor.id}>
                       <Card.Section ml="xs" mr="xs">
-                        <MonitorDetail monitor={monitor} state={state} />
+                        <MonitorDetail
+                          monitor={monitor}
+                          state={state}
+                          expanded={!!expandedCharts[monitor.id]}
+                          onToggleChart={() => toggleChart(monitor.id)}
+                        />
                       </Card.Section>
                     </div>
                   ))}
@@ -110,7 +132,12 @@ export default function MonitorList({
     content = monitors.map((monitor) => (
       <div key={monitor.id}>
         <Card.Section ml="xs" mr="xs">
-          <MonitorDetail monitor={monitor} state={state} />
+          <MonitorDetail
+            monitor={monitor}
+            state={state}
+            expanded={!!expandedCharts[monitor.id]}
+            onToggleChart={() => toggleChart(monitor.id)}
+          />
         </Card.Section>
       </div>
     ))
@@ -128,6 +155,33 @@ export default function MonitorList({
         withBorder={!groupedMonitor}
         style={{ width: groupedMonitor ? '897px' : '865px' }}
       >
+        {chartableIds.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              marginBottom: 'var(--mantine-spacing-xs)',
+            }}
+          >
+            <Button
+              variant="subtle"
+              color="gray"
+              size="compact-xs"
+              onClick={toggleAllCharts}
+              leftSection={
+                <IconChevronDown
+                  size={14}
+                  style={{
+                    transform: allChartsExpanded ? 'rotate(180deg)' : undefined,
+                    transition: 'transform 150ms ease',
+                  }}
+                />
+              }
+            >
+              {allChartsExpanded ? 'Collapse all latency' : 'Expand all latency'}
+            </Button>
+          </div>
+        )}
         {content}
       </Card>
     </Center>
