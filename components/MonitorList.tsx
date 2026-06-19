@@ -1,6 +1,6 @@
 import { MonitorState, MonitorTarget } from '@/types/config'
 import { Accordion, Button, Card, Center, Text } from '@mantine/core'
-import { IconChevronDown } from '@tabler/icons-react'
+import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 import MonitorDetail from './MonitorDetail'
 import { pageConfig } from '@/uptime.config'
 import { useEffect, useState } from 'react'
@@ -62,9 +62,10 @@ export default function MonitorList({
   }, [expandedCharts])
 
   const toggleChart = (id: string) => setExpandedCharts((prev) => ({ ...prev, [id]: !prev[id] }))
+  const setAllCharts = (expanded: boolean) =>
+    setExpandedCharts(Object.fromEntries(chartableIds.map((id) => [id, expanded])))
   const allChartsExpanded = chartableIds.length > 0 && chartableIds.every((id) => expandedCharts[id])
-  const toggleAllCharts = () =>
-    setExpandedCharts(Object.fromEntries(chartableIds.map((id) => [id, !allChartsExpanded])))
+  const noneChartsExpanded = chartableIds.every((id) => !expandedCharts[id])
 
   if (groupedMonitor) {
     // Grouped monitors
@@ -160,6 +161,7 @@ export default function MonitorList({
             style={{
               display: 'flex',
               justifyContent: 'flex-end',
+              gap: 4,
               marginBottom: 'var(--mantine-spacing-xs)',
             }}
           >
@@ -167,18 +169,21 @@ export default function MonitorList({
               variant="subtle"
               color="gray"
               size="compact-xs"
-              onClick={toggleAllCharts}
-              leftSection={
-                <IconChevronDown
-                  size={14}
-                  style={{
-                    transform: allChartsExpanded ? 'rotate(180deg)' : undefined,
-                    transition: 'transform 150ms ease',
-                  }}
-                />
-              }
+              onClick={() => setAllCharts(true)}
+              disabled={allChartsExpanded}
+              leftSection={<IconChevronDown size={14} />}
             >
-              {allChartsExpanded ? 'Collapse all latency' : 'Expand all latency'}
+              Expand all latency
+            </Button>
+            <Button
+              variant="subtle"
+              color="gray"
+              size="compact-xs"
+              onClick={() => setAllCharts(false)}
+              disabled={noneChartsExpanded}
+              leftSection={<IconChevronUp size={14} />}
+            >
+              Collapse all latency
             </Button>
           </div>
         )}
