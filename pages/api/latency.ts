@@ -24,6 +24,12 @@ export default async function handler(req: NextRequest): Promise<Response> {
   const since = Math.round(Date.now() / 1000) - windowSeconds
 
   const db = (process.env as any as Env).UPTIMEFLARE_D1
+  const t0 = Date.now()
   const series = await getLatencySeries(db, id, since)
-  return new Response(JSON.stringify(series), { headers })
+  const dbMs = Date.now() - t0
+  // `Server-Timing` shows up in the browser's Network → Timing tab so you can see
+  // how much of the response time is the D1 query vs edge/network overhead.
+  return new Response(JSON.stringify(series), {
+    headers: { ...headers, 'Server-Timing': `d1;dur=${dbMs};desc="1 query"` },
+  })
 }

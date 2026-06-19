@@ -14,6 +14,7 @@ const headers = {
 
 export default async function handler(req: NextRequest): Promise<Response> {
   const db = (process.env as any as Env).UPTIMEFLARE_D1
+  const t0 = Date.now()
 
   const lastUpdate = await getLastUpdate(db)
   if (lastUpdate === 0) {
@@ -52,7 +53,11 @@ export default async function handler(req: NextRequest): Promise<Response> {
     maintenances,
   }
 
+  // Total D1 time + query count. These run sequentially (1 + 2 per monitor), so
+  // the count surfaces the N+1 pattern in the browser's Network → Timing tab.
+  const dbMs = Date.now() - t0
+  const queryCount = 1 + workerConfig.monitors.length * 2
   return new Response(JSON.stringify(ret), {
-    headers,
+    headers: { ...headers, 'Server-Timing': `d1;dur=${dbMs};desc="${queryCount} queries"` },
   })
 }
