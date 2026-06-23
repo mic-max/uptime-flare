@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import DetailBar from './DetailBar'
 import { getStatusLevel, StatusLevel } from '@/util/color'
+import { humanizeDuration } from '@/util/duration'
 import classes from '@/styles/app.module.css'
 import { maintenances } from '@/uptime.config'
 
@@ -133,10 +134,17 @@ export default function MonitorDetail({
       />
     )
 
-  let totalTime = Date.now() / 1000 - state.incident[monitor.id][0].start[0]
+  // Uptime over the last 90 days (clamped to when monitoring began), matching the
+  // 90-day bar. Each incident's overlap with the window is counted, not its full span.
+  const nowSec = Date.now() / 1000
+  const NINETY_DAYS = 90 * 24 * 60 * 60
+  const windowStart = Math.max(nowSec - NINETY_DAYS, state.incident[monitor.id][0].start[0])
+  const totalTime = nowSec - windowStart
   let downTime = 0
   for (let incident of state.incident[monitor.id]) {
-    downTime += (incident.end ?? Date.now() / 1000) - incident.start[0]
+    const incStart = Math.max(incident.start[0], windowStart)
+    const incEnd = incident.end ?? nowSec
+    if (incEnd > incStart) downTime += incEnd - incStart
   }
 
   const uptimePercent = (((totalTime - downTime) / totalTime) * 100).toPrecision(4)
@@ -216,13 +224,19 @@ export default function MonitorDetail({
               {`avg ${stats.avg} · p95 ${stats.p95} · p99 ${stats.p99} ms`}
             </Text>
           )}
-          <Text
-            fw={700}
-            style={{ display: 'inline' }}
-            className={textColorClass[getStatusLevel(uptimePercent)]}
+          <Tooltip
+            label={`${
+              downTime >= 1 ? `Down for ${humanizeDuration(downTime)}` : 'No downtime'
+            } · Up for ${humanizeDuration(totalTime - downTime)}`}
           >
-            {`Overall: ${uptimePercent}%`}
-          </Text>
+            <Text
+              fw={700}
+              style={{ display: 'inline' }}
+              className={textColorClass[getStatusLevel(uptimePercent)]}
+            >
+              {`Overall: ${uptimePercent}%`}
+            </Text>
+          </Tooltip>
         </div>
       </div>
 

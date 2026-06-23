@@ -3,26 +3,7 @@ import { getStatusLevel, StatusLevel } from '@/util/color'
 import classes from '@/styles/app.module.css'
 import { Box, Modal } from '@mantine/core'
 import { useState } from 'react'
-
-// Human-readable duration like "2 hours 30 minutes" (replaces moment.preciseDiff).
-function humanizeDuration(totalSeconds: number): string {
-  const units: [number, string][] = [
-    [86400, 'day'],
-    [3600, 'hour'],
-    [60, 'minute'],
-    [1, 'second'],
-  ]
-  let remaining = Math.round(totalSeconds)
-  const parts: string[] = []
-  for (const [size, name] of units) {
-    const value = Math.floor(remaining / size)
-    if (value > 0) {
-      parts.push(`${value} ${name}${value === 1 ? '' : 's'}`)
-      remaining -= value * size
-    }
-  }
-  return parts.length > 0 ? parts.join(' ') : '0 seconds'
-}
+import { humanizeDuration } from '@/util/duration'
 
 // StatusLevel -> day-pill background class (see styles/app.module.css)
 const barColorClass: Record<StatusLevel, string> = {
