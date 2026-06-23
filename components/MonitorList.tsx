@@ -1,4 +1,4 @@
-import { MonitorState, MonitorTarget } from '@/types/config'
+import { LatencyRecord, MonitorState, MonitorTarget } from '@/types/config'
 import { Accordion, Button, Card, Center, Text } from '@mantine/core'
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 import MonitorDetail from './MonitorDetail'
@@ -32,9 +32,12 @@ function getStatusTextClass(state: MonitorState, ids: string[]) {
 export default function MonitorList({
   monitors,
   state,
+  liveDeltas = {},
 }: {
   monitors: MonitorTarget[]
   state: MonitorState
+  // New latency points per monitor from the background poll (delta-append to charts).
+  liveDeltas?: Record<string, LatencyRecord[]>
 }) {
   const group = pageConfig.group
   const groupedMonitor = group && Object.keys(group).length > 0
@@ -118,6 +121,7 @@ export default function MonitorList({
                           state={state}
                           expanded={!!expandedCharts[monitor.id]}
                           onToggleChart={() => toggleChart(monitor.id)}
+                          liveDelta={liveDeltas[monitor.id]}
                         />
                       </Card.Section>
                     </div>
@@ -138,6 +142,7 @@ export default function MonitorList({
             state={state}
             expanded={!!expandedCharts[monitor.id]}
             onToggleChart={() => toggleChart(monitor.id)}
+            liveDelta={liveDeltas[monitor.id]}
           />
         </Card.Section>
       </div>

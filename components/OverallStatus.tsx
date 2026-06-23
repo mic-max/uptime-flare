@@ -6,16 +6,6 @@ import MaintenanceAlert from './MaintenanceAlert'
 import { pageConfig } from '@/uptime.config'
 import classes from '@/styles/app.module.css'
 
-function useWindowVisibility() {
-  const [isVisible, setIsVisible] = useState(true)
-  useEffect(() => {
-    const handleVisibilityChange = () => setIsVisible(document.visibilityState === 'visible')
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [])
-  return isVisible
-}
-
 export default function OverallStatus({
   state,
   maintenances,
@@ -43,21 +33,15 @@ export default function OverallStatus({
     })`
   }
 
-  const [openTime] = useState(Math.round(Date.now() / 1000))
   const [currentTime, setCurrentTime] = useState(Math.round(Date.now() / 1000))
-  const isWindowVisible = useWindowVisibility()
   const [expandUpcoming, setExpandUpcoming] = useState(false)
 
+  // Tick the clock so the "last updated X sec ago" label stays current between
+  // background polls (the page no longer reloads — see useLiveState in index.tsx).
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isWindowVisible) return
-      if (currentTime - state.lastUpdate > 300 && currentTime - openTime > 30) {
-        window.location.reload()
-      }
-      setCurrentTime(Math.round(Date.now() / 1000))
-    }, 1000)
+    const interval = setInterval(() => setCurrentTime(Math.round(Date.now() / 1000)), 1000)
     return () => clearInterval(interval)
-  })
+  }, [])
 
   const now = new Date()
 

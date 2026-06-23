@@ -242,6 +242,33 @@ export async function getLatencySeries(
   return rows.results.map((r) => ({ time: r.ts, ping: r.ping, loc: r.loc }))
 }
 
+// Latency points strictly newer than `sinceSeconds` for a set of monitors, in ONE
+// query. Used by /api/refresh to deliver just the new tail for the charts a client
+// has open (delta-append), rather than the whole series each poll.
+export async function getLatencyDeltas(
+  db: D1Database,
+  monitorIds: string[],
+  sinceSeconds: number
+): Promise<Record<string, LatencyRecord[]>> {
+  const out: Record<string, LatencyRecord[]> = {}
+  if (monitorIds.length === 0) return out
+
+  const placeholders = monitorIds.map(() => '?').join(',')
+  const rows = await db
+    .prepare(
+      `SELECT monitor_id, ts, ping, loc FROM latency
+       WHERE monitor_id IN (${placeholders}) AND ts > ?
+       ORDER BY monitor_id, ts`
+    )
+    .bind(...monitorIds, sinceSeconds)
+    .all<LatencyRow & { monitor_id: string }>()
+
+  for (const r of rows.results) {
+    ;(out[r.monitor_id] ??= []).push({ time: r.ts, ping: r.ping, loc: r.loc })
+  }
+  return out
+}
+
 // ---------------------------------------------------------------------------
 // Page state read (used by the status page)
 // ---------------------------------------------------------------------------

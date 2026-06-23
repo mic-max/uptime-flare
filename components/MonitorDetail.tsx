@@ -29,11 +29,17 @@ const textColorClass: Record<StatusLevel, string> = {
   noData: classes.textNoData,
 }
 
+// Keep the chart bounded to the same window the server returns (see
+// LATENCY_DISPLAY_SECONDS in worker/src/store.ts) so a long session doesn't grow
+// the series unbounded as deltas are appended.
+const CHART_WINDOW_SECONDS = 6 * 60 * 60
+
 export default function MonitorDetail({
   monitor,
   state,
   expanded,
   onToggleChart,
+  liveDelta,
 }: {
   monitor: MonitorTarget
   state: MonitorState
@@ -41,6 +47,8 @@ export default function MonitorDetail({
   // "expand all" + localStorage persistence); otherwise it falls back to local.
   expanded?: boolean
   onToggleChart?: () => void
+  // New latency points from the background poll, appended to the open chart.
+  liveDelta?: LatencyRecord[]
 }) {
   const [internalShow, setInternalShow] = useState(false)
   const showChart = expanded ?? internalShow
@@ -65,6 +73,20 @@ export default function MonitorDetail({
       cancelled = true
     }
   }, [showChart, latency, monitor.id])
+
+  // Append new points delivered by the background poll. Idempotent (only points
+  // newer than the last one) and trimmed to the display window.
+  useEffect(() => {
+    if (!liveDelta || liveDelta.length === 0) return
+    setLatency((prev) => {
+      if (prev === null) return prev // initial fetch (in flight) will cover these
+      const lastTs = prev.length ? prev[prev.length - 1].time : 0
+      const fresh = liveDelta.filter((p) => p.time > lastTs)
+      if (fresh.length === 0) return prev
+      const cutoff = Math.round(Date.now() / 1000) - CHART_WINDOW_SECONDS
+      return [...prev, ...fresh].filter((p) => p.time >= cutoff)
+    })
+  }, [liveDelta])
 
   const toggleChart = () => (onToggleChart ? onToggleChart() : setInternalShow((v) => !v))
 
