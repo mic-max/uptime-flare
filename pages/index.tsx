@@ -109,6 +109,18 @@ export default function Home({
             <MonitorList monitors={monitors} state={state} liveDeltas={liveDeltas} />
           </div>
         )}
+
+        <Center mt="xl">
+          <Text
+            component="a"
+            href={`https://github.com/mic-max/uptime-flare/commit/${process.env.NEXT_PUBLIC_COMMIT_HASH}`}
+            target="_blank"
+            size="xs"
+            c="dimmed"
+          >
+            build {process.env.NEXT_PUBLIC_COMMIT_HASH}
+          </Text>
+        </Center>
       </main>
     </>
   )

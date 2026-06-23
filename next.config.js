@@ -1,8 +1,24 @@
 const path = require('path')
+const { execSync } = require('child_process')
+
+// Build-time git commit hash, surfaced on the page. CI sets GITHUB_SHA; fall back
+// to a local `git` call (e.g. for `npm run dev`).
+let commitHash = (process.env.GITHUB_SHA || '').slice(0, 7)
+if (!commitHash) {
+  try {
+    commitHash = execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {
+    commitHash = 'unknown'
+  }
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Inlined at build time so it's available client-side as process.env.NEXT_PUBLIC_COMMIT_HASH.
+  env: {
+    NEXT_PUBLIC_COMMIT_HASH: commitHash,
+  },
   // Tree-shake large barrel packages so only the icons/components actually used
   // end up in the bundle (cuts "unused JavaScript").
   experimental: {
