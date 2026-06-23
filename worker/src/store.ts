@@ -56,6 +56,10 @@ export async function ensureSchema(db: D1Database): Promise<void> {
       )`
     ),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_latency_monitor_ts ON latency (monitor_id, ts)`),
+    // Index on ts alone so the retention prune (DELETE WHERE ts < ?) and the stats
+    // window scan (WHERE ts >= ?) seek instead of full-scanning the table — the
+    // (monitor_id, ts) index above can't serve a ts-only predicate.
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_latency_ts ON latency (ts)`),
     db.prepare(
       `CREATE TABLE IF NOT EXISTS incident (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
