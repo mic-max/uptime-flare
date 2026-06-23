@@ -2,7 +2,13 @@ import { DurableObject } from 'cloudflare:workers'
 import { MonitorTarget } from '../../types/config'
 import { workerConfig } from '../../uptime.config'
 import { DEFAULT_TIMEOUT_MS, doMonitor, getStatus } from './monitor'
-import { formatAndNotify, getWorkerLocation, shouldNotifyDown, shouldNotifyUp } from './util'
+import {
+  formatAndNotify,
+  getWorkerLocation,
+  mapWithConcurrency,
+  shouldNotifyDown,
+  shouldNotifyUp,
+} from './util'
 import {
   INCIDENT_RETENTION_SECONDS,
   LATENCY_RETENTION_SECONDS,
@@ -14,7 +20,6 @@ import {
   updateIncident,
   writeLatencyBatch,
 } from './store'
-import pLimit from 'p-limit'
 
 export interface Env {
   REMOTE_CHECKER_DO: DurableObjectNamespace<RemoteChecker>
@@ -40,17 +45,15 @@ const Worker = {
 
     const currentTimeSecond = Math.round(Date.now() / 1000)
 
-    // Parallel check multiple monitors
-    // Max concurrent connection is 6 limited by Cloudflare Workers, we use 5 here to be safe
+    // Parallel check multiple monitors, capped at 5 concurrent (Workers allow at
+    // most 6 simultaneous outbound connections).
     // https://developers.cloudflare.com/workers/platform/limits/#simultaneous-open-connections
     type CheckResult = { id: string; location: string; status: { ping: number; up: boolean; err: string } }
-    let checkQueue: Promise<CheckResult>[] = []
-    let checkResult: Record<string, CheckResult> = {};
-    const limit = pLimit(5);
-    for (const monitor of workerConfig.monitors) {
-      checkQueue.push(limit(() => doMonitor(monitor, workerLocation, env)))
-    }
-    for (const result of await Promise.all(checkQueue)) {
+    let checkResult: Record<string, CheckResult> = {}
+    const results = await mapWithConcurrency(workerConfig.monitors, 5, (monitor) =>
+      doMonitor(monitor, workerLocation, env)
+    )
+    for (const result of results) {
       checkResult[result.id] = result
     }
 

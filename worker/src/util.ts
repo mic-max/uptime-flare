@@ -78,6 +78,30 @@ function withTimeout<T>(millis: number, promise: Promise<T>): Promise<T> {
   return Promise.race([promise, timeout])
 }
 
+// Run `fn` over `items` with at most `concurrency` calls in flight at a time
+// (a tiny replacement for p-limit). Workers cap simultaneous outbound
+// connections at 6, so checks are capped at 5. Results are returned in input
+// order. Uses a fixed worker pool: each worker pulls the next index until the
+// list is exhausted, giving rolling concurrency (a new task starts the moment a
+// slot frees, not in batches).
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length)
+  let next = 0
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++
+      results[i] = await fn(items[i])
+    }
+  }
+  const pool = Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
+  await Promise.all(pool)
+  return results
+}
+
 function formatStatusChangeNotification(
   monitor: any,
   isUp: boolean,
@@ -237,6 +261,7 @@ export {
   getWorkerLocation,
   fetchTimeout,
   withTimeout,
+  mapWithConcurrency,
   webhookNotify,
   formatStatusChangeNotification,
   formatAndNotify,
