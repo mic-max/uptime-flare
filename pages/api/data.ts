@@ -2,6 +2,7 @@ import { maintenances, workerConfig } from '@/uptime.config'
 import { NextRequest } from 'next/server'
 import type { Env } from '@/worker/src'
 import { getDataSnapshot } from '@/worker/src/store'
+import { devDataSnapshot } from '@/util/devData'
 
 export const runtime = 'edge'
 
@@ -17,7 +18,8 @@ export default async function handler(req: NextRequest): Promise<Response> {
   const t0 = Date.now()
 
   // One batched round-trip: latest latency + latest incident per monitor.
-  const { lastUpdate, incident, latency } = await getDataSnapshot(db)
+  // Falls back to sample data when there's no binding (plain `next dev`).
+  const { lastUpdate, incident, latency } = db ? await getDataSnapshot(db) : devDataSnapshot()
   if (lastUpdate === 0) {
     return new Response(JSON.stringify({ error: 'No data available' }), { status: 500, headers })
   }

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import type { Env } from '@/worker/src'
 import { getLatencySeries, LATENCY_DISPLAY_SECONDS } from '@/worker/src/store'
+import { devLatencySeries } from '@/util/devData'
 
 export const runtime = 'edge'
 
@@ -25,7 +26,8 @@ export default async function handler(req: NextRequest): Promise<Response> {
 
   const db = (process.env as any as Env).UPTIMEFLARE_D1
   const t0 = Date.now()
-  const series = await getLatencySeries(db, id, since)
+  // Fall back to sample data when there's no binding (plain `next dev`).
+  const series = db ? await getLatencySeries(db, id, since) : devLatencySeries(id, since)
   const dbMs = Date.now() - t0
   // `Server-Timing` shows up in the browser's Network → Timing tab so you can see
   // how much of the response time is the D1 query vs edge/network overhead.

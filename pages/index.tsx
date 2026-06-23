@@ -179,8 +179,12 @@ export async function getServerSideProps({ res }: GetServerSidePropsContext) {
   res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=30')
 
   const { workerConfig } = await import('@/uptime.config')
-  // Build the full MonitorState directly from the normalized D1 tables.
-  const state = await loadMonitorState((process.env as any as Env).UPTIMEFLARE_D1)
+  // Build the full MonitorState from D1 — or sample data when there's no binding
+  // (plain `next dev`), so the page renders locally without wrangler/D1.
+  const db = (process.env as any as Env).UPTIMEFLARE_D1
+  const state = db
+    ? await loadMonitorState(db)
+    : (await import('@/util/devData')).devMonitorState()
 
   // Map raw colo codes -> friendly names server-side (dynamic import keeps the
   // large iata table out of the client's initial bundle).
