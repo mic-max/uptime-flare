@@ -183,13 +183,14 @@ export default function MonitorList({
         mr="md"
         mt="xl"
         withBorder={!groupedMonitor}
-        style={{ width: groupedMonitor ? '897px' : '865px' }}
+        style={{ width: '100%', maxWidth: groupedMonitor ? 897 : 865 }}
       >
         {chartableIds.length > 0 && (
           <div
             style={{
               display: 'flex',
               justifyContent: 'flex-end',
+              flexWrap: 'wrap',
               gap: 4,
               marginBottom: 'var(--mantine-spacing-xs)',
             }}

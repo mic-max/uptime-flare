@@ -181,10 +181,12 @@ export default function MonitorDetail({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '4px 12px',
           marginTop: 'var(--mantine-spacing-sm)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
           {monitor.tooltip ? (
             <Tooltip label={monitor.tooltip}>{monitorNameElement}</Tooltip>
           ) : (
@@ -243,7 +245,7 @@ export default function MonitorDetail({
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           {stats && (
             <Text size="xs" className={classes.muted} style={{ whiteSpace: 'nowrap' }}>
               {`avg ${stats.avg} · p95 ${stats.p95} · p99 ${stats.p99} ms`}
