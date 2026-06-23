@@ -1,4 +1,4 @@
-import { Button, Text, Tooltip } from '@mantine/core'
+import { Button, Text } from '@mantine/core'
 import { LatencyRecord, MonitorState, MonitorTarget } from '@/types/config'
 import {
   IconAlertCircle,
@@ -155,9 +155,10 @@ export default function MonitorDetail({
   const uptimePercent = (((totalTime - downTime) / totalTime) * 100).toPrecision(4)
   const stats = state.stats[monitor.id]
 
-  // Conditionally render monitor name with or without hyperlink based on monitor.url presence
+  // Conditionally render monitor name with or without hyperlink based on monitor.url presence.
+  // `title` shows the optional tooltip natively (undefined = no tooltip).
   const monitorNameElement = (
-    <Text fw={700} style={{ display: 'inline-flex', alignItems: 'center' }}>
+    <Text fw={700} title={monitor.tooltip} style={{ display: 'inline-flex', alignItems: 'center' }}>
       {monitor.statusPageLink ? (
         <a
           href={monitor.statusPageLink}
@@ -187,11 +188,7 @@ export default function MonitorDetail({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-          {monitor.tooltip ? (
-            <Tooltip label={monitor.tooltip}>{monitorNameElement}</Tooltip>
-          ) : (
-            monitorNameElement
-          )}
+          {monitorNameElement}
           {locationColor && location && (
             <span
               style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
@@ -251,19 +248,16 @@ export default function MonitorDetail({
               {`avg ${stats.avg} · p95 ${stats.p95} · p99 ${stats.p99} ms`}
             </Text>
           )}
-          <Tooltip
-            label={`${
+          <Text
+            fw={700}
+            title={`${
               downTime >= 1 ? `Down for ${humanizeDuration(downTime)}` : 'No downtime'
             } · Up for ${humanizeDuration(totalTime - downTime)}`}
+            style={{ display: 'inline' }}
+            className={textColorClass[getStatusLevel(uptimePercent)]}
           >
-            <Text
-              fw={700}
-              style={{ display: 'inline' }}
-              className={textColorClass[getStatusLevel(uptimePercent)]}
-            >
-              {`Overall: ${uptimePercent}%`}
-            </Text>
-          </Tooltip>
+            {`Overall: ${uptimePercent}%`}
+          </Text>
         </div>
       </div>
 
