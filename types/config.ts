@@ -93,4 +93,8 @@ export type MonitorState = {
   overallDown: number
   incident: Record<string, IncidentRecord[]>
   stats: Record<string, LatencyStats>
+  // Most recent check location per monitor. The worker stores the raw colo code
+  // (e.g. "ATL"); the Pages layer maps it to a friendly name (e.g.
+  // "United States/Georgia") before sending it to the client.
+  location: Record<string, string>
 }

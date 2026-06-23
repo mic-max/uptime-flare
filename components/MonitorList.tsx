@@ -29,6 +29,19 @@ function getStatusTextClass(state: MonitorState, ids: string[]) {
   return classes.textFair
 }
 
+// Distinct colors assigned (in sorted order) to each check location so the same
+// region always gets the same swatch in both the legend and the per-monitor dots.
+const LOCATION_PALETTE = [
+  '#4dabf7',
+  '#82c91e',
+  '#fab005',
+  '#e64980',
+  '#7950f2',
+  '#15aabf',
+  '#fd7e14',
+  '#a9e34b',
+]
+
 export default function MonitorList({
   monitors,
   state,
@@ -69,6 +82,13 @@ export default function MonitorList({
     setExpandedCharts(Object.fromEntries(chartableIds.map((id) => [id, expanded])))
   const allChartsExpanded = chartableIds.length > 0 && chartableIds.every((id) => expandedCharts[id])
   const noneChartsExpanded = chartableIds.every((id) => !expandedCharts[id])
+
+  // Stable color per distinct check location (sorted) for the legend + dots.
+  const distinctLocations = Array.from(
+    new Set(monitors.map((m) => state.location[m.id]).filter(Boolean))
+  ).sort()
+  const locationColor = (loc?: string) =>
+    loc ? LOCATION_PALETTE[distinctLocations.indexOf(loc) % LOCATION_PALETTE.length] : undefined
 
   if (groupedMonitor) {
     // Grouped monitors
@@ -122,6 +142,8 @@ export default function MonitorList({
                           expanded={!!expandedCharts[monitor.id]}
                           onToggleChart={() => toggleChart(monitor.id)}
                           liveDelta={liveDeltas[monitor.id]}
+                          location={state.location[monitor.id]}
+                          locationColor={locationColor(state.location[monitor.id])}
                         />
                       </Card.Section>
                     </div>
@@ -143,6 +165,8 @@ export default function MonitorList({
             expanded={!!expandedCharts[monitor.id]}
             onToggleChart={() => toggleChart(monitor.id)}
             liveDelta={liveDeltas[monitor.id]}
+            location={state.location[monitor.id]}
+            locationColor={locationColor(state.location[monitor.id])}
           />
         </Card.Section>
       </div>
@@ -161,35 +185,64 @@ export default function MonitorList({
         withBorder={!groupedMonitor}
         style={{ width: groupedMonitor ? '897px' : '865px' }}
       >
-        {chartableIds.length > 0 && (
+        {(distinctLocations.length > 0 || chartableIds.length > 0) && (
           <div
             style={{
               display: 'flex',
-              justifyContent: 'flex-end',
-              gap: 4,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 8,
               marginBottom: 'var(--mantine-spacing-xs)',
             }}
           >
-            <Button
-              variant="subtle"
-              color="gray"
-              size="compact-xs"
-              onClick={() => setAllCharts(true)}
-              disabled={allChartsExpanded}
-              leftSection={<IconChevronDown size={14} />}
-            >
-              Expand all latency
-            </Button>
-            <Button
-              variant="subtle"
-              color="gray"
-              size="compact-xs"
-              onClick={() => setAllCharts(false)}
-              disabled={noneChartsExpanded}
-              leftSection={<IconChevronUp size={14} />}
-            >
-              Collapse all latency
-            </Button>
+            {/* Legend: which color marks each check location */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {distinctLocations.map((loc) => (
+                <span
+                  key={loc}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      backgroundColor: locationColor(loc),
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Text size="xs" className={classes.muted}>
+                    {loc}
+                  </Text>
+                </span>
+              ))}
+            </div>
+
+            {chartableIds.length > 0 && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  size="compact-xs"
+                  onClick={() => setAllCharts(true)}
+                  disabled={allChartsExpanded}
+                  leftSection={<IconChevronDown size={14} />}
+                >
+                  Expand all latency
+                </Button>
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  size="compact-xs"
+                  onClick={() => setAllCharts(false)}
+                  disabled={noneChartsExpanded}
+                  leftSection={<IconChevronUp size={14} />}
+                >
+                  Collapse all latency
+                </Button>
+              </div>
+            )}
           </div>
         )}
         {content}

@@ -41,6 +41,8 @@ export default function MonitorDetail({
   expanded,
   onToggleChart,
   liveDelta,
+  location,
+  locationColor,
 }: {
   monitor: MonitorTarget
   state: MonitorState
@@ -50,6 +52,9 @@ export default function MonitorDetail({
   onToggleChart?: () => void
   // New latency points from the background poll, appended to the open chart.
   liveDelta?: LatencyRecord[]
+  // Friendly check location (e.g. "United States/Georgia") + its legend color.
+  location?: string
+  locationColor?: string
 }) {
   const [internalShow, setInternalShow] = useState(false)
   const showChart = expanded ?? internalShow
@@ -184,6 +189,20 @@ export default function MonitorDetail({
             <Tooltip label={monitor.tooltip}>{monitorNameElement}</Tooltip>
           ) : (
             monitorNameElement
+          )}
+          {locationColor && location && (
+            <Tooltip label={`Checked from ${location}`}>
+              <span
+                aria-label={`Checked from ${location}`}
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: locationColor,
+                  flexShrink: 0,
+                }}
+              />
+            </Tooltip>
           )}
           {monitor.statusDependency && (
             <Text

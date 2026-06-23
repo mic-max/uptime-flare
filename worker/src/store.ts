@@ -288,6 +288,7 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
     overallDown: 0,
     incident: {},
     stats: {},
+    location: {},
   }
 
   const incidents = await db
@@ -313,19 +314,24 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
 
   state.lastUpdate = await getLastUpdate(db)
 
-  // Per-monitor latency stats over the display window. One query (just ping
-  // values), grouped + reduced in JS. Bounded by the display window, not retention.
+  // Per-monitor latency stats over the display window, plus each monitor's most
+  // recent check location. One query (ping/ts/loc), grouped + reduced in JS.
   const cutoff = Math.round(Date.now() / 1000) - LATENCY_DISPLAY_SECONDS
   const pings = await db
-    .prepare(`SELECT monitor_id, ping FROM latency WHERE ts >= ? ORDER BY monitor_id`)
+    .prepare(`SELECT monitor_id, ts, ping, loc FROM latency WHERE ts >= ? ORDER BY monitor_id`)
     .bind(cutoff)
-    .all<{ monitor_id: string; ping: number }>()
+    .all<{ monitor_id: string; ts: number; ping: number; loc: string }>()
   const pingsByMonitor: Record<string, number[]> = {}
+  const latestLoc: Record<string, { ts: number; loc: string }> = {}
   for (const row of pings.results) {
     ;(pingsByMonitor[row.monitor_id] ??= []).push(row.ping)
+    if (!latestLoc[row.monitor_id] || row.ts > latestLoc[row.monitor_id].ts) {
+      latestLoc[row.monitor_id] = { ts: row.ts, loc: row.loc }
+    }
   }
   for (const monitorId of Object.keys(pingsByMonitor)) {
     state.stats[monitorId] = computeLatencyStats(pingsByMonitor[monitorId])
+    state.location[monitorId] = latestLoc[monitorId].loc
   }
 
   return state

@@ -123,6 +123,11 @@ export async function getServerSideProps({ res }: GetServerSidePropsContext) {
   // Build the full MonitorState directly from the normalized D1 tables.
   const state = await loadMonitorState((process.env as any as Env).UPTIMEFLARE_D1)
 
+  // Map raw colo codes -> friendly names server-side (dynamic import keeps the
+  // large iata table out of the client's initial bundle).
+  const { codeToCountry } = await import('@/util/iata')
+  for (const id in state.location) state.location[id] = codeToCountry(state.location[id])
+
   // Only present these values to client
   const monitors = workerConfig.monitors.map((monitor) => ({
     id: monitor.id,

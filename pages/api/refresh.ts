@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import type { Env } from '@/worker/src'
 import { getLatencyDeltas, loadMonitorState } from '@/worker/src/store'
+import { codeToCountry } from '@/util/iata'
 
 export const runtime = 'edge'
 
@@ -26,6 +27,7 @@ export default async function handler(req: NextRequest): Promise<Response> {
   const since = Number(url.searchParams.get('since')) || 0
 
   const state = await loadMonitorState(db)
+  for (const id in state.location) state.location[id] = codeToCountry(state.location[id])
   const latency = charts.length > 0 ? await getLatencyDeltas(db, charts, since) : {}
 
   const dbMs = Date.now() - t0
