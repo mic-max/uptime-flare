@@ -20,9 +20,32 @@ function useLiveState(initialState: MonitorState) {
   const latestTsRef = useRef(initialState.lastUpdate)
 
   useEffect(() => {
+    // The worker cron writes new data once per WORKER_INTERVAL_S. Rather than poll
+    // at a fixed cadence (and show data up to a full interval stale), we aim each
+    // poll to land POLL_BUFFER_S after the next expected write — so the page
+    // reflects fresh data within ~POLL_BUFFER_S of it being produced.
+    //
+    // Tune POLL_BUFFER_S: it must exceed the worker's run time (checks + D1 write,
+    // ~a handful of seconds) to catch the new data on the first poll. Smaller =
+    // fresher but more "polled too early" retries; larger = one clean poll but the
+    // data shown is slightly older. Watch the worker's run duration and adjust.
+    const WORKER_INTERVAL_S = 60
+    const POLL_BUFFER_S = 10
+    const MIN_RETRY_S = 5 // polled a bit early — try again soon
+    const STALE_BACKOFF_S = 30 // data not advancing (worker delayed/down) — back off
+
     let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let staleStreak = 0
+
+    const scheduleIn = (seconds: number) => {
+      if (cancelled) return
+      clearTimeout(timer)
+      timer = setTimeout(poll, Math.max(1, seconds) * 1000)
+    }
+
     const poll = async () => {
-      if (document.visibilityState !== 'visible') return
+      if (document.visibilityState !== 'visible') return // paused; resumes on visibilitychange
       try {
         // Open charts are the source of truth in localStorage (see MonitorList).
         const expanded: Record<string, boolean> = JSON.parse(
@@ -33,25 +56,49 @@ function useLiveState(initialState: MonitorState) {
         if (openIds.length) params.set('charts', openIds.join(','))
 
         const res = await fetch(`/api/refresh?${params.toString()}`)
-        if (!res.ok || cancelled) return
-        const data: { state: MonitorState; latency: Record<string, LatencyRecord[]> } =
-          await res.json()
+        if (!res.ok || cancelled) {
+          scheduleIn(MIN_RETRY_S)
+          return
+        }
+        const data: {
+          state: MonitorState
+          latency: Record<string, LatencyRecord[]>
+          now: number
+        } = await res.json()
         if (cancelled) return
+
+        const advanced = data.state.lastUpdate > latestTsRef.current
         latestTsRef.current = data.state.lastUpdate
         setState(data.state)
         setLiveDeltas(data.latency)
+
+        if (advanced) {
+          // Aim for POLL_BUFFER_S after the next write. Computed purely from server
+          // time (lastUpdate + now), so it's immune to client clock skew.
+          staleStreak = 0
+          scheduleIn(data.state.lastUpdate + WORKER_INTERVAL_S + POLL_BUFFER_S - data.now)
+        } else {
+          // No new data yet: a couple of quick retries, then back off.
+          staleStreak++
+          scheduleIn(staleStreak >= 3 ? STALE_BACKOFF_S : MIN_RETRY_S)
+        }
       } catch {
-        /* transient network error — try again next tick */
+        scheduleIn(MIN_RETRY_S)
       }
     }
 
-    const interval = setInterval(poll, 60_000)
-    // Catch up immediately when the tab regains focus after being hidden.
+    // First poll: estimate from the client clock (only this one cycle is subject to
+    // skew; every poll after locks onto server time from the response). latestTsRef
+    // is seeded with the SSR lastUpdate.
+    scheduleIn(
+      latestTsRef.current + WORKER_INTERVAL_S + POLL_BUFFER_S - Math.round(Date.now() / 1000)
+    )
+
     const onVisible = () => document.visibilityState === 'visible' && poll()
     document.addEventListener('visibilitychange', onVisible)
     return () => {
       cancelled = true
-      clearInterval(interval)
+      clearTimeout(timer)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])

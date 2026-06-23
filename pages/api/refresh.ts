@@ -7,8 +7,9 @@ export const runtime = 'edge'
 
 const headers = {
   'Content-Type': 'application/json',
-  // Background poll; let shared caches briefly coalesce bursts.
-  'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=15',
+  // Personalized, timing-sensitive poll: the client schedules its next poll from
+  // the `now`/`lastUpdate` in the response, so a shared cache would skew that.
+  'Cache-Control': 'no-store',
 }
 
 // Lightweight poll endpoint that replaces the old full-page reload. Returns the
@@ -30,8 +31,11 @@ export default async function handler(req: NextRequest): Promise<Response> {
   for (const id in state.location) state.location[id] = codeToCountry(state.location[id])
   const latency = charts.length > 0 ? await getLatencyDeltas(db, charts, since) : {}
 
+  // Server time (seconds), so the client can schedule its next poll relative to
+  // when the worker last wrote (state.lastUpdate) without depending on its own clock.
+  const now = Math.round(Date.now() / 1000)
   const dbMs = Date.now() - t0
-  return new Response(JSON.stringify({ state, latency }), {
+  return new Response(JSON.stringify({ state, latency, now }), {
     headers: { ...headers, 'Server-Timing': `d1;dur=${dbMs};desc="refresh"` },
   })
 }
