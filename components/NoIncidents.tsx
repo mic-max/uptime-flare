@@ -12,7 +12,7 @@ export default function NoIncidentsAlert({ style }: { style?: React.CSSPropertie
             fontWeight: 700,
           }}
         >
-          {'No incidents in this month'}
+          {'No incidents'}
         </span>
       }
       color="gray"
@@ -23,7 +23,7 @@ export default function NoIncidentsAlert({ style }: { style?: React.CSSPropertie
         ...style,
       }}
     >
-      <Text>There are no incidents for this month.</Text>
+      <Text>There are no incidents to report.</Text>
     </Alert>
   )
 }
