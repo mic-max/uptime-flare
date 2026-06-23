@@ -7,6 +7,10 @@ export default function Document() {
       <Head>
         <ColorSchemeScript defaultColorScheme="auto" />
         <link rel="icon" href="/favicon.png" />
+        <meta
+          name="description"
+          content="Live status, uptime history, and response times for MicMax's cloud and self-hosted services."
+        />
       </Head>
       <body>
         <Main />
