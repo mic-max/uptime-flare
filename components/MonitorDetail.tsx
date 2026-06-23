@@ -191,9 +191,11 @@ export default function MonitorDetail({
             monitorNameElement
           )}
           {locationColor && location && (
-            <Tooltip label={`Checked from ${location}`}>
+            <span
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              title={`Checked from ${location}`}
+            >
               <span
-                aria-label={`Checked from ${location}`}
                 style={{
                   width: 10,
                   height: 10,
@@ -202,7 +204,11 @@ export default function MonitorDetail({
                   flexShrink: 0,
                 }}
               />
-            </Tooltip>
+              <Text size="xs" className={classes.muted} style={{ whiteSpace: 'nowrap' }}>
+                {/* Drop the leading country, e.g. "United States/Georgia" -> "Georgia" */}
+                {location.includes('/') ? location.split('/').slice(1).join('/') : location}
+              </Text>
+            </span>
           )}
           {monitor.statusDependency && (
             <Text

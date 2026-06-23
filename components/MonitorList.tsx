@@ -185,64 +185,35 @@ export default function MonitorList({
         withBorder={!groupedMonitor}
         style={{ width: groupedMonitor ? '897px' : '865px' }}
       >
-        {(distinctLocations.length > 0 || chartableIds.length > 0) && (
+        {chartableIds.length > 0 && (
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 8,
+              justifyContent: 'flex-end',
+              gap: 4,
               marginBottom: 'var(--mantine-spacing-xs)',
             }}
           >
-            {/* Legend: which color marks each check location */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-              {distinctLocations.map((loc) => (
-                <span
-                  key={loc}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                >
-                  <span
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: locationColor(loc),
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Text size="xs" className={classes.muted}>
-                    {loc}
-                  </Text>
-                </span>
-              ))}
-            </div>
-
-            {chartableIds.length > 0 && (
-              <div style={{ display: 'flex', gap: 4 }}>
-                <Button
-                  variant="subtle"
-                  color="gray"
-                  size="compact-xs"
-                  onClick={() => setAllCharts(true)}
-                  disabled={allChartsExpanded}
-                  leftSection={<IconChevronDown size={14} />}
-                >
-                  Expand all latency
-                </Button>
-                <Button
-                  variant="subtle"
-                  color="gray"
-                  size="compact-xs"
-                  onClick={() => setAllCharts(false)}
-                  disabled={noneChartsExpanded}
-                  leftSection={<IconChevronUp size={14} />}
-                >
-                  Collapse all latency
-                </Button>
-              </div>
-            )}
+            <Button
+              variant="subtle"
+              color="gray"
+              size="compact-xs"
+              onClick={() => setAllCharts(true)}
+              disabled={allChartsExpanded}
+              leftSection={<IconChevronDown size={14} />}
+            >
+              Expand all latency
+            </Button>
+            <Button
+              variant="subtle"
+              color="gray"
+              size="compact-xs"
+              onClick={() => setAllCharts(false)}
+              disabled={noneChartsExpanded}
+              leftSection={<IconChevronUp size={14} />}
+            >
+              Collapse all latency
+            </Button>
           </div>
         )}
         {content}
