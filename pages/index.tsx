@@ -182,14 +182,22 @@ export async function getServerSideProps({ res }: GetServerSidePropsContext) {
   // Build the full MonitorState from D1 — or sample data when there's no binding
   // (plain `next dev`), so the page renders locally without wrangler/D1.
   const db = (process.env as any as Env).UPTIMEFLARE_D1
+  const tDb = Date.now()
   const state = db
     ? await loadMonitorState(db)
     : (await import('@/util/devData')).devMonitorState()
+  const dbMs = Date.now() - tDb
 
   // Map raw colo codes -> friendly names server-side (dynamic import keeps the
   // large iata table out of the client's initial bundle).
+  const tEnrich = Date.now()
   const { codeToCountry } = await import('@/util/iata')
   for (const id in state.location) state.location[id] = codeToCountry(state.location[id])
+  const enrichMs = Date.now() - tEnrich
+
+  // Surfaces in DevTools -> Network -> the document request -> Timing tab, so you
+  // can see how much of the response is D1 vs. everything else (rendering, network).
+  res.setHeader('Server-Timing', `d1;dur=${dbMs};desc="loadMonitorState", enrich;dur=${enrichMs}`)
 
   // Only present these values to client
   const monitors = workerConfig.monitors.map((monitor) => ({

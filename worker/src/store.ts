@@ -174,11 +174,6 @@ export async function writeLatencyBatch(
   await db.batch(statements)
 }
 
-export async function getLastUpdate(db: D1Database): Promise<number> {
-  const row = await db.prepare(`SELECT MAX(ts) AS ts FROM latency`).first<{ ts: number | null }>()
-  return row?.ts ?? 0
-}
-
 // Snapshot for the /api/data summary: latest latency + latest incident for every
 // monitor, plus lastUpdate (= newest latency ts) — all in ONE batched round-trip
 // (two statements) instead of 1 + 2-per-monitor sequential queries.
@@ -291,13 +286,27 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
     location: {},
   }
 
-  const incidents = await db
-    .prepare(
+  // All three reads (incidents, MAX(ts), windowed latency for stats/location) in
+  // ONE batched round-trip instead of three sequential ones — this is the bulk of
+  // the status page's server response time, since each D1 query is a cross-region hop.
+  const cutoff = Math.round(Date.now() / 1000) - LATENCY_DISPLAY_SECONDS
+  const [incidents, lastUpdateRes, pings] = await db.batch([
+    db.prepare(
       `SELECT monitor_id, starts, end_time, errors FROM incident
        ORDER BY monitor_id, start_time, id`
-    )
-    .all<{ monitor_id: string; starts: string; end_time: number | null; errors: string }>()
-  for (const row of incidents.results) {
+    ),
+    db.prepare(`SELECT MAX(ts) AS ts FROM latency`),
+    db
+      .prepare(`SELECT monitor_id, ts, ping, loc FROM latency WHERE ts >= ? ORDER BY monitor_id`)
+      .bind(cutoff),
+  ])
+
+  for (const row of incidents.results as unknown as {
+    monitor_id: string
+    starts: string
+    end_time: number | null
+    errors: string
+  }[]) {
     ;(state.incident[row.monitor_id] ??= []).push({
       start: JSON.parse(row.starts),
       end: row.end_time,
@@ -312,18 +321,18 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
     else state.overallUp++
   }
 
-  state.lastUpdate = await getLastUpdate(db)
+  state.lastUpdate = (lastUpdateRes.results[0] as { ts: number | null })?.ts ?? 0
 
   // Per-monitor latency stats over the display window, plus each monitor's most
-  // recent check location. One query (ping/ts/loc), grouped + reduced in JS.
-  const cutoff = Math.round(Date.now() / 1000) - LATENCY_DISPLAY_SECONDS
-  const pings = await db
-    .prepare(`SELECT monitor_id, ts, ping, loc FROM latency WHERE ts >= ? ORDER BY monitor_id`)
-    .bind(cutoff)
-    .all<{ monitor_id: string; ts: number; ping: number; loc: string }>()
+  // recent check location. Grouped + reduced in JS from the windowed query above.
   const pingsByMonitor: Record<string, number[]> = {}
   const latestLoc: Record<string, { ts: number; loc: string }> = {}
-  for (const row of pings.results) {
+  for (const row of pings.results as unknown as {
+    monitor_id: string
+    ts: number
+    ping: number
+    loc: string
+  }[]) {
     ;(pingsByMonitor[row.monitor_id] ??= []).push(row.ping)
     if (!latestLoc[row.monitor_id] || row.ts > latestLoc[row.monitor_id].ts) {
       latestLoc[row.monitor_id] = { ts: row.ts, loc: row.loc }
