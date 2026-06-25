@@ -182,14 +182,16 @@ export async function getDataSnapshot(db: D1Database): Promise<{
   incident: Record<string, IncidentRecord>
   latency: Record<string, LatencyRecord>
 }> {
-  const [latencyRes, incidentRes] = await db.batch([
+  // Nearest-replica read (eventual consistency is fine for this summary endpoint).
+  const session = db.withSession('first-unconstrained')
+  const [latencyRes, incidentRes] = await session.batch([
     // Newest latency row per monitor (id is autoincrement, so MAX(id) == latest).
-    db.prepare(
+    session.prepare(
       `SELECT monitor_id, ts, ping, loc FROM latency
        WHERE id IN (SELECT MAX(id) FROM latency GROUP BY monitor_id)`
     ),
     // Newest incident row per monitor (same ordering as getLastIncident).
-    db.prepare(
+    session.prepare(
       `SELECT monitor_id, starts, end_time, errors FROM (
          SELECT monitor_id, starts, end_time, errors,
                 ROW_NUMBER() OVER (PARTITION BY monitor_id ORDER BY start_time DESC, id DESC) AS rn
@@ -235,6 +237,7 @@ export async function getLatencySeries(
   sinceSeconds = 0
 ): Promise<LatencyRecord[]> {
   const rows = await db
+    .withSession('first-unconstrained')
     .prepare(`SELECT ts, ping, loc FROM latency WHERE monitor_id = ? AND ts >= ? ORDER BY ts`)
     .bind(monitorId, sinceSeconds)
     .all<LatencyRow>()
@@ -254,6 +257,7 @@ export async function getLatencyDeltas(
 
   const placeholders = monitorIds.map(() => '?').join(',')
   const rows = await db
+    .withSession('first-unconstrained')
     .prepare(
       `SELECT monitor_id, ts, ping, loc FROM latency
        WHERE monitor_id IN (${placeholders}) AND ts > ?
@@ -286,17 +290,22 @@ export async function loadMonitorState(db: D1Database): Promise<MonitorState> {
     location: {},
   }
 
+  // Read from the nearest replica (read_replication=auto in deploy.tf) instead of
+  // the cross-region primary — the page tolerates ~minute-stale data, so eventual
+  // consistency is fine and this avoids the WNAM<->ENAM round-trip latency.
+  const session = db.withSession('first-unconstrained')
+
   // All three reads (incidents, MAX(ts), windowed latency for stats/location) in
   // ONE batched round-trip instead of three sequential ones — this is the bulk of
   // the status page's server response time, since each D1 query is a cross-region hop.
   const cutoff = Math.round(Date.now() / 1000) - LATENCY_DISPLAY_SECONDS
-  const [incidents, lastUpdateRes, pings] = await db.batch([
-    db.prepare(
+  const [incidents, lastUpdateRes, pings] = await session.batch([
+    session.prepare(
       `SELECT monitor_id, starts, end_time, errors FROM incident
        ORDER BY monitor_id, start_time, id`
     ),
-    db.prepare(`SELECT MAX(ts) AS ts FROM latency`),
-    db
+    session.prepare(`SELECT MAX(ts) AS ts FROM latency`),
+    session
       .prepare(`SELECT monitor_id, ts, ping, loc FROM latency WHERE ts >= ? ORDER BY monitor_id`)
       .bind(cutoff),
   ])
