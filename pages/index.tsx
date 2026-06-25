@@ -195,9 +195,12 @@ export async function getServerSideProps({ res }: GetServerSidePropsContext) {
   for (const id in state.location) state.location[id] = codeToCountry(state.location[id])
   const enrichMs = Date.now() - tEnrich
 
-  // Surfaces in DevTools -> Network -> the document request -> Timing tab, so you
-  // can see how much of the response is D1 vs. everything else (rendering, network).
-  res.setHeader('Server-Timing', `d1;dur=${dbMs};desc="loadMonitorState", enrich;dur=${enrichMs}`)
+  // Cloudflare manages/strips the reserved `Server-Timing` header on non-Enterprise
+  // plans, so expose the breakdown via a custom header (passed through untouched)
+  // and a log line (visible in `wrangler pages deployment tail`). Read it with:
+  //   curl -sI https://status.micmax.pw | grep -i x-ssr-timing
+  res.setHeader('X-SSR-Timing', `d1=${dbMs}ms; enrich=${enrichMs}ms`)
+  console.log(`[ssr] loadMonitorState=${dbMs}ms enrich=${enrichMs}ms`)
 
   // Only present these values to client
   const monitors = workerConfig.monitors.map((monitor) => ({
