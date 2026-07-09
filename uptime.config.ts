@@ -138,9 +138,16 @@ const maintenances: MaintenanceConfig[] = [
   {
     title: 'Power outage',
     body: 'A local power outage took the self-hosted services offline. Services were restored once power returned.',
-    // America/Toronto is UTC-4 (EDT) in June; offsets make the time unambiguous.
     start: '2026-06-16T07:00:00-04:00',
     end: '2026-06-16T13:00:00-04:00',
+    color: 'red',
+    monitors: ['cluster_test_site', 'mumble_server', 'minecraft_server', 'jellyfin_server'],
+  },
+  {
+    title: 'Power outage - Storm',
+    body: 'A local power outage took the self-hosted services offline. Services were restored once power returned.',
+    start: '2026-07-01T15:50:00-04:00',
+    end: '2026-07-02T10:50:00-04:00',
     color: 'red',
     monitors: ['cluster_test_site', 'mumble_server', 'minecraft_server', 'jellyfin_server'],
   },
