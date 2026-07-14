@@ -1,16 +1,10 @@
 # ✔[UptimeFlare](https://github.com/lyc8503/UptimeFlare)
 
-A more advanced, serverless, and free uptime monitoring & status page solution, powered by Cloudflare Workers, complete with a user-friendly interface.
-
-📢 **[[SECURITY ADVISORY](https://github.com/lyc8503/UptimeFlare/security/advisories/GHSA-36q9-v7p3-vj6v) 2026/03/04]** A vulnerability (CVE-2026-29779) that could expose monitor configuration and credentials in `uptime.config.ts` to clients was fixed. Versions between 2025-09-21 (from commit `41257c6`) and 2026-03-04 are affected. **Affected users are strongly advised to upgrade to the latest version.**
-
-🎉 **[UPDATE 2026/01/03]** I have just migrated UptimeFlare from KV to D1 Database. I also updated the Terraform Cloudflare provider to v5 and improved the deployment process. The data structure has been optimized to resolve long-standing performance issues.
-
-New users can deploy directly, while existing users can have a simple auto migration process (upgrade docs below)! Feel free to open an issue if you run into any trouble deploying.
+A free and serverless uptime monitoring & status page solution
+Powered by Cloudflare Workers and Pages.
 
 ## ⭐Features
 
-- Open-source, easy to deploy (in under 10 minutes, no local tools required), and free
 - Monitoring capabilities
   - Up to 50 checks at 1-minute intervals
   - Geo-specific checks from over [310 cities](https://www.cloudflare.com/network/) worldwide
@@ -28,56 +22,6 @@ New users can deploy directly, while existing users can have a simple auto migra
   - Use your own domain with CNAME
   - Optional password authentication (private status page)
   - JSON API for fetching realtime status data
-
-## 👀Demo
-
-My status page: https://status.micmax.pw
-
-## ⚡Quickstart / 📄Documentation
-
-Please refer to [Wiki](https://github.com/lyc8503/UptimeFlare/wiki)
-
-## 🚀Upgrade existing deployments
-
-Get the latest features right away with [simple upgrade process](https://github.com/lyc8503/UptimeFlare/wiki/Synchronize-updates-from-upstream)
-
-## ⚙️Docs for developer
-
-To contribute new features or customize your deployment furthermore, see [here](https://github.com/lyc8503/UptimeFlare/wiki/How-to-develop).
-
-## New features (TODOs)
-
-- [x] Specify region for monitors
-- [x] TCP `opened` promise
-- [x] Use apprise to support various notification channels
-- [x] ~~Telegram example~~
-- [x] ~~[Bark](https://bark.day.app) example~~
-- [x] ~~Email notification via Cloudflare Email Workers~~
-- [x] Improve docs by providing simple examples
-- [x] Notification grace period
-- [ ] SSL certificate checks
-- [x] ~~Self-host Dockerfile~~
-- [x] Incident history
-- [x] Improve `checkLocationWorkerRoute` and fix possible `proxy failed`
-- [x] Groups
-- [x] Remove old incidents
-- [x] ~~Known issue~~: `fetch` doesn't support non-standard port (resolved after CF update)
-- [x] Compatibility date update
-- [x] Scheduled Maintenance
-- [x] Add docs for dev
-- [x] Migration to Terraform Cloudflare provider version 5.x
-- [x] Cloudflare D1 database
-- [x] Scheduled maintenances (via IIFE)
-- [x] Simpler config example
-- [x] Upcoming maintenances
-- [x] Universal Webhook upgrade
-- [x] i18n...? (maybe)
-- [ ] ICMP via proxy?
-- [x] Add default UA
-- [x] Customizable footer
-- [x] New header logo
-- [x] Improve CPU time usage
-- [x] Local deployment (docs WIP)
 
 ## MicMax Setup
 
@@ -102,15 +46,15 @@ You don't need to create the tables manually — the worker's `ensureSchema()` r
 `npx wrangler secret put PUSHOVER_TOKEN --name uptimeflare_worker`
 `npx wrangler secret put PUSHOVER_USER_KEY --name uptimeflare_worker`
 
+### Local development
+`npm run dev` runs the status page with **sample data** — no Cloudflare bindings
+needed. When the `UPTIMEFLARE_D1` binding is absent (always the case under plain
+`next dev`), the data layer falls back to fixtures in `util/devData.ts` (generated
+from your `uptime.config.ts` monitors), so the page, charts, incidents, and
+`/api/*` endpoints all render locally. In production the binding always exists, so
+fixtures never run.
 
 ## TODO
-replace plimit?
-
-the change to insert to D1 after each monitor will result in more writes
-
-write-path optimization for latency rows
-- is 6 rows being deleted and inserted on each worker invoke
-- what if instead I just update the oldest record?
 
 add some incidents
 - power outage june 16 7am to ~12pm
@@ -124,9 +68,7 @@ consider connecting worker to git repository and having cloudflare do the build?
 
 can I compress the latency information that I request from the browser.
 
-open websocket from browser to load the newest data. in the cloudflare worker it can also have new latency be pushed to currently open connections somehow?
-
-have the entire website be loaded and generated client side. 
+have the entire website be loaded and generated client side.
 
 get away from next.js since it is so bloated for the purposes of this website.
 
@@ -134,9 +76,7 @@ compact the data for the webpage
 - incidents
 - latencies
 
-protobuf
-https://github.com/protobufjs/protobuf.js/
-is the savings worth including the library?
+dependency-free columnar JSON I described earlier — parallel arrays (t0 + delta-dt[], ping[], locs[] + index) — gets ~half the size with zero library, and still composes with gzip on top
 
 generate historical latency baselines (per worker location), set expected ranges, and alert on sustained out-of-range latencies
 - (avg / p95 / p99 are now shown per monitor over the display window)
@@ -145,24 +85,45 @@ add a user-facing latency time-range selector (backend already supports /api/lat
 
 add a build step to compress all JS and HTML and CSS, simpler classnames too, etc.
 
-In each monitor render vertical segments that mark out where pings came from a certain location.
-E.g. my cluster site gets pinged from florida, my mumble server from new jersey, jellyfin from illinois
-
-- figure out why cloudflare does requests from different places from my same worker script... and why it consistently chooses the same location for each monitor. maybe i am being tricked somehow too.
-
-when the page reloads every 5 minutes, it will close the dropdowns I had open. switch to a websocket that updates with new latencies every 5 minutes.
-
 use or remove maintainances feature
 
-start groups open by default
-
-add a button to expand/collapse all latencies
-- remember state of dropdowns on reloads?
-
-can i include the githash on the webpage?
-
-how can i test the project locally? npm run dev doesn't work since it needs to fetch API data to populate things?
-
-add a meta description
-
 server-rendering the shell
+
+https://opennext.js.org/cloudflare/get-started#existing-nextjs-apps
+
+popular status page.
+https://www.atlassian.com/software/statuspage
+
+include histograms for latency instead of just avg/p95/p99
+
+cache the latency?
+
+add telemetry to this. so i can see traces, of web requests to database, etc.
+export to my grafana instance?
+
+make the latency data cacheable on my client, so if i have already loaded a timerange, it will reuse that and request only the missing latency information
+
+improve the visibility on the incidents modal. I see time ranges with the error, but maybe also show total time and a 24 hour diagram of the up vs down time
+
+fix mobile view with new mean,p95,p99 and external service links, etc.
+
+add tests to the website and worker
+
+improve CPU usage
+
+rewrite the worker in C++ or Rust or Golang?
+
+massive spikes to 3000ms really make the latency chart useless since all resolution is lost for everything other than that one outlier
+include a chart mode that shows a running 1m/5m/10m average, so rare spikes are obtrusive
+
+include some kind of expected floor on latency. for example from new jersey to ottawa in a straight line there and back would take light ~3ms minimum or ~15ms to and from florida 
+
+migrate primary d1 to ENAM?
+1. Export current data: wrangler d1 export uptimeflare_d1 --remote --output=backup.sql
+2. Create new DB pinned to ENAM: wrangler d1 create uptimeflare_d1_enam --location=enam
+3. Import: wrangler d1 execute uptimeflare_d1_enam --remote --file=backup.sql
+4. Repoint: update the CLOUDFLARE_D1_ID GitHub secret to the new id, and re-import it in the Terraform step (the bindings reference the resource, so the worker/Pages pick up the new DB on deploy).
+5. Optionally drop read_replication (a local primary doesn't need it).
+
+include a timestamp next to git hash
+changes to githash are not affected if I only make changes to the worker...
