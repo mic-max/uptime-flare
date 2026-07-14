@@ -89,6 +89,7 @@ const Worker = {
       // Update incidents
       // Create a dummy incident to store the start time of the monitoring and simplify logic,
       // so that `lastIncident` below is never null.
+      // TODO: improve this code, slightly confusing with requiring a dummy incident
       let last = await getLastIncident(db, monitor.id)
       if (last === null) {
         const dummy = { start: [currentTimeSecond], end: currentTimeSecond, error: ['dummy'] }
